@@ -1,12 +1,19 @@
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useBookingData } from "@/hooks/useBookingData";
 import { useBookingState } from "./useBookingState";
 import { useBookingValidation } from "./useBookingValidation";
 import { useBookingActions } from "./useBookingActions";
+import { format } from 'date-fns';
+
+const timeSlots = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
+];
 
 export const useBookingFlow = () => {
-  const { services, technicians, bookedSlots, isFetchingSlots, fetchBookedSlots, clearBookedSlots, refreshBookedSlots } = useBookingData();
+  const { services, technicians, monthlyBookedData, isFetchingSlots, fetchMonthlyBookedData, clearBookedSlots, refreshBookedSlots } = useBookingData();
   
   const {
     step,
@@ -63,42 +70,51 @@ export const useBookingFlow = () => {
     refreshBookedSlots
   );
 
-  // Clear booked slots when technician changes
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const handleMonthChange = (month: Date) => {
+    setCurrentMonth(month);
+  };
+
+  const bookedSlots = useMemo(() => {
+    if (!selectedDate || !monthlyBookedData) return [];
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    return monthlyBookedData[dateKey] || [];
+  }, [selectedDate, monthlyBookedData]);
+
+  const fullyBookedDays = useMemo(() => {
+    if (!monthlyBookedData) return [];
+    return Object.keys(monthlyBookedData).filter(dateStr => 
+        monthlyBookedData[dateStr].length >= timeSlots.length
+    );
+  }, [monthlyBookedData]);
+
   useEffect(() => {
     if (selectedTechnician) {
-      console.log('Technician changed to:', selectedTechnician);
-      if (selectedDate) {
-        // Re-fetch booked slots for new technician
-        fetchBookedSlots(selectedDate, selectedTechnician);
-      }
+      fetchMonthlyBookedData(currentMonth, selectedTechnician);
     } else {
-      // Clear booked slots when no technician is selected
       clearBookedSlots();
     }
-  }, [selectedTechnician, fetchBookedSlots, clearBookedSlots]);
+  }, [selectedTechnician, currentMonth, fetchMonthlyBookedData, clearBookedSlots]);
 
-  // Fetch booked slots when date changes (if technician is already selected)
   useEffect(() => {
-    if (selectedDate && selectedTechnician) {
-      console.log('Date changed to:', selectedDate, 'for technician:', selectedTechnician);
-      fetchBookedSlots(selectedDate, selectedTechnician);
-    } else if (!selectedDate) {
-      // Clear booked slots when no date is selected
-      clearBookedSlots();
+    if (selectedDate) {
+      if (selectedDate.getMonth() !== currentMonth.getMonth() || selectedDate.getFullYear() !== currentMonth.getFullYear()) {
+        setCurrentMonth(selectedDate);
+      }
     }
-  }, [selectedDate, selectedTechnician, fetchBookedSlots, clearBookedSlots]);
+  }, [selectedDate, currentMonth]);
 
-  // Refresh booked slots every 30 seconds to keep data current
   useEffect(() => {
-    if (selectedDate && selectedTechnician && step === 3) {
+    if (selectedTechnician && step === 3) {
       const interval = setInterval(() => {
-        console.log('Auto-refreshing booked slots...');
-        fetchBookedSlots(selectedDate, selectedTechnician);
+        console.log('Auto-refreshing monthly booked slots...');
+        fetchMonthlyBookedData(currentMonth, selectedTechnician);
       }, 30000); // Refresh every 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [selectedDate, selectedTechnician, step, fetchBookedSlots]);
+  }, [currentMonth, selectedTechnician, step, fetchMonthlyBookedData]);
 
   const wrappedHandleNext = () => {
     handleNext(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, technicians);
@@ -135,6 +151,7 @@ export const useBookingFlow = () => {
     technicians,
     bookedSlots,
     isFetchingSlots,
+    fullyBookedDays,
     setSelectedService,
     setSelectedTechnician,
     setSelectedDate,
@@ -148,6 +165,7 @@ export const useBookingFlow = () => {
     verifyOtp: wrappedVerifyOtp,
     handleSubmit: wrappedHandleSubmit,
     handleConfirmationClose,
-    isNextDisabled: wrappedIsNextDisabled
+    isNextDisabled: wrappedIsNextDisabled,
+    handleMonthChange
   };
 };

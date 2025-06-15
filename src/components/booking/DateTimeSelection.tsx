@@ -4,14 +4,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from 'date-fns';
 
 interface DateTimeSelectionProps {
   selectedDate?: Date;
   selectedTime: string;
   bookedSlots: string[];
   isFetchingSlots: boolean;
+  fullyBookedDays: string[];
   onDateSelect: (date: Date | undefined) => void;
   onTimeSelect: (time: string) => void;
+  onMonthChange: (date: Date) => void;
 }
 
 const timeSlots = [
@@ -25,8 +28,10 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   selectedTime,
   bookedSlots,
   isFetchingSlots,
+  fullyBookedDays,
   onDateSelect,
-  onTimeSelect
+  onTimeSelect,
+  onMonthChange
 }) => {
   console.log('DateTimeSelection rendered with bookedSlots:', bookedSlots);
 
@@ -47,10 +52,13 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
             mode="single"
             selected={selectedDate}
             onSelect={onDateSelect}
+            onMonthChange={onMonthChange}
             disabled={(date) => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              return date < today || date.getDay() === 0; // Disable past dates and Sundays
+              const isPastOrSunday = date < today || date.getDay() === 0;
+              const isFullyBooked = fullyBookedDays.includes(format(date, 'yyyy-MM-dd'));
+              return isPastOrSunday || isFullyBooked;
             }}
             className="rounded-md border"
           />

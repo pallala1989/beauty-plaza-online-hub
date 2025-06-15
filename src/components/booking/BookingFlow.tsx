@@ -15,6 +15,7 @@ interface BookingFlowProps {
   technicians: any[];
   bookedSlots: string[];
   isFetchingSlots: boolean;
+  fullyBookedDays: string[];
   selectedService: string;
   selectedTechnician: string;
   selectedDate?: Date;
@@ -32,6 +33,7 @@ interface BookingFlowProps {
   onOtpChange: (otp: string) => void;
   onSendOtp: () => void;
   onVerifyOtp: () => void;
+  onMonthChange: (date: Date) => void;
 }
 
 const BookingFlow: React.FC<BookingFlowProps> = ({
@@ -41,6 +43,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   technicians,
   bookedSlots,
   isFetchingSlots,
+  fullyBookedDays,
   selectedService,
   selectedTechnician,
   selectedDate,
@@ -57,7 +60,8 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   onPhoneChange,
   onOtpChange,
   onSendOtp,
-  onVerifyOtp
+  onVerifyOtp,
+  onMonthChange
 }) => {
   const getStepTitle = () => {
     if (step === 1) return "Step 1: Select Service";
@@ -111,8 +115,10 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
             selectedTime={selectedTime}
             bookedSlots={bookedSlots}
             isFetchingSlots={isFetchingSlots}
+            fullyBookedDays={fullyBookedDays}
             onDateSelect={onDateSelect}
             onTimeSelect={onTimeSelect}
+            onMonthChange={onMonthChange}
           />
         )}
 

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 export const useBookingData = () => {
   const [services, setServices] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [monthlyBookedData, setMonthlyBookedData] = useState<Record<string, string[]>>({});
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
 
   const fetchServices = async () => {
@@ -59,51 +59,59 @@ export const useBookingData = () => {
     }
   };
 
-  const fetchBookedSlots = async (selectedDate: Date, selectedTechnician: string) => {
-    if (!selectedDate || !selectedTechnician) {
-      console.log('fetchBookedSlots: Missing date or technician', { selectedDate, selectedTechnician });
-      setBookedSlots([]);
+  const fetchMonthlyBookedData = async (month: Date, selectedTechnician: string) => {
+    if (!month || !selectedTechnician) {
+      setMonthlyBookedData({});
       return;
     }
 
     setIsFetchingSlots(true);
     try {
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      console.log('Fetching booked slots for:', { 
-        selectedDate: formattedDate, 
+      const startDate = format(startOfMonth(month), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(month), 'yyyy-MM-dd');
+      
+      console.log('Fetching monthly booked slots for:', { 
+        month: format(month, 'yyyy-MM'), 
         selectedTechnician 
       });
       
-      // Fetch with real-time subscription to ensure we get latest data
       const { data, error } = await supabase
         .from('appointments')
-        .select('appointment_time, status')
+        .select('appointment_date, appointment_time, status')
         .eq('technician_id', selectedTechnician)
-        .eq('appointment_date', formattedDate)
+        .gte('appointment_date', startDate)
+        .lte('appointment_date', endDate)
         .in('status', ['scheduled', 'confirmed'])
         .order('appointment_time');
       
       if (error) {
-        console.error('Error fetching booked slots:', error);
+        console.error('Error fetching monthly booked slots:', error);
         throw error;
       }
       
-      const booked = data?.map(appointment => appointment.appointment_time.slice(0, 5)) || [];
-      console.log('Booked slots found for technician', selectedTechnician, 'on', formattedDate, ':', booked);
-      setBookedSlots(booked);
+      const slotsByDate: Record<string, string[]> = {};
+      data?.forEach(appointment => {
+          const dateKey = appointment.appointment_date;
+          if (!slotsByDate[dateKey]) {
+              slotsByDate[dateKey] = [];
+          }
+          slotsByDate[dateKey].push(appointment.appointment_time.slice(0, 5));
+      });
+
+      console.log('Monthly booked slots found for technician', selectedTechnician, 'on', format(month, 'yyyy-MM'), ':', slotsByDate);
+      setMonthlyBookedData(slotsByDate);
     } catch (error) {
-      console.error('Error fetching booked slots:', error);
-      setBookedSlots([]);
+      console.error('Error fetching monthly booked slots:', error);
+      setMonthlyBookedData({});
     } finally {
       setIsFetchingSlots(false);
     }
   };
 
-  // Force refresh booked slots - useful for real-time updates
-  const refreshBookedSlots = async (selectedDate?: Date, selectedTechnician?: string) => {
-    if (selectedDate && selectedTechnician) {
-      console.log('Force refreshing booked slots...');
-      await fetchBookedSlots(selectedDate, selectedTechnician);
+  const refreshBookedSlots = async (month?: Date, selectedTechnician?: string) => {
+    if (month && selectedTechnician) {
+      console.log('Force refreshing monthly booked slots...');
+      await fetchMonthlyBookedData(month, selectedTechnician);
     }
   };
 
@@ -117,17 +125,16 @@ export const useBookingData = () => {
     console.log('Technicians state updated:', technicians);
   }, [technicians]);
 
-  // Clear booked slots when technician changes
   const clearBookedSlots = () => {
-    setBookedSlots([]);
+    setMonthlyBookedData({});
   };
 
   return {
     services,
     technicians,
-    bookedSlots,
+    monthlyBookedData,
     isFetchingSlots,
-    fetchBookedSlots,
+    fetchMonthlyBookedData,
     clearBookedSlots,
     refreshBookedSlots
   };

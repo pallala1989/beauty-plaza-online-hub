@@ -24,6 +24,7 @@ const BookOnline = () => {
     technicians,
     bookedSlots,
     isFetchingSlots,
+    fullyBookedDays,
     setSelectedService,
     setSelectedTechnician,
     setSelectedDate,
@@ -37,7 +38,8 @@ const BookOnline = () => {
     verifyOtp,
     handleSubmit,
     handleConfirmationClose,
-    isNextDisabled
+    isNextDisabled,
+    handleMonthChange
   } = useBookingFlow();
 
   const maxStep = serviceType === "in-store" ? 4 : 5;
@@ -75,6 +77,7 @@ const BookOnline = () => {
           technicians={technicians}
           bookedSlots={bookedSlots}
           isFetchingSlots={isFetchingSlots}
+          fullyBookedDays={fullyBookedDays}
           selectedService={selectedService}
           selectedTechnician={selectedTechnician}
           selectedDate={selectedDate}
@@ -92,6 +95,7 @@ const BookOnline = () => {
           onOtpChange={setOtp}
           onSendOtp={sendOtp}
           onVerifyOtp={verifyOtp}
+          onMonthChange={handleMonthChange}
         />
 
         <BookingNavigation
