@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,29 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, MapPin, Phone, Loader2 } from "lucide-react";
 import { useAppointments } from "@/hooks/useAppointments";
 import { supabase } from "@/integrations/supabase/client";
+import RescheduleAppointment from "./RescheduleAppointment";
 
 const AppointmentHistory = () => {
   const { toast } = useToast();
   const { appointments, isLoading, error, refetch } = useAppointments();
-
-  const handleReschedule = async (appointmentId: string) => {
-    try {
-      // Here you could implement actual rescheduling logic
-      // For now, we'll just show a message
-      toast({
-        title: "Reschedule Requested",
-        description: "Your reschedule request has been submitted. We'll contact you shortly to confirm new timing.",
-      });
-      
-      console.log('Rescheduling appointment:', appointmentId);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reschedule appointment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleCancel = async (appointmentId: string) => {
     try {
@@ -188,14 +169,14 @@ const AppointmentHistory = () => {
                 </div>
                 {isUpcoming(appointment.status) && (
                   <div className="space-x-2">
-                    <Button
-                      onClick={() => handleReschedule(appointment.id)}
-                      variant="outline"
-                      size="sm"
-                      className="hover:bg-blue-50 hover:border-blue-300"
-                    >
-                      Reschedule
-                    </Button>
+                    <RescheduleAppointment
+                      appointmentId={appointment.id}
+                      currentDate={appointment.appointment_date}
+                      currentTime={appointment.appointment_time}
+                      currentTechnician={appointment.technician.name}
+                      serviceName={appointment.service.name}
+                      onRescheduleSuccess={refetch}
+                    />
                     <Button
                       onClick={() => handleCancel(appointment.id)}
                       variant="outline"
