@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -195,8 +194,11 @@ export const useBookingActions = (
         ...appointmentData,
         service_name: selectedServiceDetails?.name,
         technician_name: technicians.find(t => t.id === selectedTechnician)?.name,
-        formatted_date: format(selectedDate, 'MMMM dd, yyyy'),
-        formatted_time: selectedTime
+        selectedDate: selectedDate,
+        appointment_time: selectedTime,
+        service_duration: selectedServiceDetails?.duration,
+        customer_name: customerInfo.name,
+        customer_info: customerInfo
       });
 
       setShowConfirmation(true);

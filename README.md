@@ -10,13 +10,13 @@ The frontend is built with React, Vite, TypeScript, Tailwind CSS, and Shadcn UI 
 ### Key Features
 - Service browsing and selection
 - Online appointment booking flow
-- Customer authentication (Login/Register)
+- Customer authentication (Login/Register via OAuth)
 - User profile management (view bookings, update info)
 - Admin dashboard for managing services, technicians, and settings.
 
 ## Backend (Spring Boot)
 
-The backend is a Spring Boot application that provides a RESTful API for the frontend.
+The backend is a Spring Boot application that provides a RESTful API for the frontend. It is designed to be secured using OAuth2.
 
 ### Architecture
 - **Controller Layer**: Handles HTTP requests and responses.
@@ -24,20 +24,20 @@ The backend is a Spring Boot application that provides a RESTful API for the fro
 - **Repository Layer**: Interacts with the database using Spring Data JPA.
 - **Model/Entity Layer**: Defines the data structures.
 - **DTOs**: Data Transfer Objects for clean API contracts.
-- **Security**: JWT-based authentication and authorization.
+- **Security**: OAuth2 for authentication and authorization.
 
 ### Database Schema
+The application uses a PostgreSQL database with the following main tables:
 - `services`
 - `technicians`
 - `appointments`
-- `users`
-- `roles`
-- `user_roles`
-- `settings`
+- `users` (from Supabase Auth)
+- `profiles`
+- `promotions`
+- `gift_cards`
+- `loyalty_points`
 
 ### API Endpoints
-- `POST /api/auth/signin`
-- `POST /api/auth/signup`
 - `GET /api/services`
 - `GET /api/technicians`
 - `GET /api/appointments/slots`
@@ -45,14 +45,14 @@ The backend is a Spring Boot application that provides a RESTful API for the fro
 - `GET /api/admin/settings`
 - `POST /api/admin/settings`
 
-### Java Class Definitions
+---
 
-Below are the definitions for key Java classes used in the backend.
+### Backend Setup and Configuration
 
 #### `pom.xml` (Dependencies)
 ```xml
 <dependencies>
-    <!-- Spring Boot Starter -->
+    <!-- Spring Boot Starters -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
@@ -65,30 +65,15 @@ Below are the definitions for key Java classes used in the backend.
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
 
     <!-- PostgreSQL Driver -->
     <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-
-    <!-- JWT Library -->
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-api</artifactId>
-        <version>0.11.5</version>
-    </dependency>
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-impl</artifactId>
-        <version>0.11.5</version>
-        <scope>runtime</scope>
-    </dependency>
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-jackson</artifactId>
-        <version>0.11.5</version>
         <scope>runtime</scope>
     </dependency>
 
@@ -101,29 +86,81 @@ Below are the definitions for key Java classes used in the backend.
 </dependencies>
 ```
 
+#### `application.properties`
+```properties
+# Database Connection (replace with your Supabase DB credentials)
+spring.datasource.url=jdbc:postgresql://<your_supabase_db_host>:<port>/postgres
+spring.datasource.username=postgres
+spring.datasource.password=<your_supabase_db_password>
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Spring Security OAuth2 Client Configuration (Example for Google)
+spring.security.oauth2.client.registration.google.client-id=<your-google-client-id>
+spring.security.oauth2.client.registration.google.client-secret=<your-google-client-secret>
+spring.security.oauth2.client.registration.google.scope=openid,profile,email
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}
+```
+
+#### Security Configuration (`SecurityConfig.java`)
+```java
+package com.beautyplaza.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(
+                    "/", 
+                    "/api/services/**", 
+                    "/api/technicians/**",
+                    "/error",
+                    "/actuator/**"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(withDefaults());
+        return http.build();
+    }
+}
+```
+
+---
+
+### Java Class Definitions
+
+Below are the definitions for key Java classes used in the backend.
+
 #### DTOs (Data Transfer Objects)
 
-**`AppointmentDTO.java`**
+**`ServiceDTO.java`**
 ```java
 package com.beautyplaza.dto;
 
 import lombok.Data;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.math.BigDecimal;
 
 @Data
-public class AppointmentDTO {
+public class ServiceDTO {
     private Long id;
-    private Long serviceId;
-    private String serviceName;
-    private Long technicianId;
-    private String technicianName;
-    private Long customerId;
-    private String customerName;
-    private LocalDate appointmentDate;
-    private LocalTime appointmentTime;
-    private String status;
-    private String serviceType; // e.g., "in-salon" or "in-home"
+    private String name;
+    private String description;
+    private BigDecimal price;
+    private Integer duration; // in minutes
+    private String imageUrl;
+    private boolean isActive;
 }
 ```
 
@@ -143,35 +180,49 @@ public class TechnicianDTO {
 }
 ```
 
-**`ServiceDTO.java`**
+**`AppointmentDTO.java`**
 ```java
 package com.beautyplaza.dto;
 
 import lombok.Data;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
-public class ServiceDTO {
+public class AppointmentDTO {
     private Long id;
-    private String name;
-    private String description;
-    private BigDecimal price;
-    private Integer duration; // in minutes
+    private Long serviceId;
+    private String serviceName;
+    private Long technicianId;
+    private String technicianName;
+    private Long customerId;
+    private String customerName;
+    private String customerEmail;
+    private String customerPhone;
+    private LocalDate appointmentDate;
+    private LocalTime appointmentTime;
+    private String status; // e.g., "scheduled", "confirmed", "cancelled"
+    private String serviceType; // e.g., "in-store" or "in-home"
+    private String notes;
+    private BigDecimal totalAmount;
 }
 ```
 
-**`CustomerDTO.java`**
+**`ProfileDTO.java`**
 ```java
 package com.beautyplaza.dto;
 
 import lombok.Data;
 
 @Data
-public class CustomerDTO {
-    private Long id;
+public class ProfileDTO {
+    private String id; // UUID from Auth provider
     private String fullName;
     private String email;
     private String phone;
+    private String address;
+    private String role; // e.g., "customer", "admin"
 }
 ```
 
@@ -195,43 +246,7 @@ public class BookingRequest {
     private String customerName;
     private String customerEmail;
     private String customerPhone;
-}
-```
-
-**`LoginRequest.java`**
-```java
-package com.beautyplaza.request;
-
-import lombok.Data;
-
-@Data
-public class LoginRequest {
-    private String email;
-    private String password;
-}
-```
-
-**`JwtResponse.java`**
-```java
-package com.beautyplaza.response;
-
-import lombok.Data;
-import java.util.List;
-
-@Data
-public class JwtResponse {
-    private String token;
-    private String type = "Bearer";
-    private Long id;
-    private String email;
-    private List<String> roles;
-
-    public JwtResponse(String accessToken, Long id, String email, List<String> roles) {
-        this.token = accessToken;
-        this.id = id;
-        this.email = email;
-        this.roles = roles;
-    }
+    private String notes;
 }
 ```
 
