@@ -11,10 +11,13 @@ const ReferralSection = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [referralEmail, setReferralEmail] = useState("");
+  const [isCopying, setIsCopying] = useState(false);
   
   const referralLink = `${window.location.origin}/register?ref=${user?.id || 'demo-user'}`;
 
   const copyReferralLink = async () => {
+    setIsCopying(true);
+    
     try {
       // Use the Clipboard API if available
       if (navigator.clipboard && window.isSecureContext) {
@@ -47,22 +50,22 @@ const ReferralSection = () => {
           }
         } catch (err) {
           textArea.remove();
-          // Manual copy fallback
-          prompt("Copy this referral link:", referralLink);
+          // Show fallback message
           toast({
-            title: "Copy Manually",
-            description: "Please copy the link from the dialog box.",
+            title: "Copy Link",
+            description: `Please copy this link manually: ${referralLink}`,
           });
         }
       }
     } catch (error) {
       console.error('Failed to copy text: ', error);
-      // Manual copy fallback
-      prompt("Copy this referral link:", referralLink);
+      // Show fallback message
       toast({
-        title: "Copy Manually",
-        description: "Please copy the link from the dialog box.",
+        title: "Copy Link",
+        description: `Please copy this link manually: ${referralLink}`,
       });
+    } finally {
+      setIsCopying(false);
     }
   };
 
@@ -93,7 +96,8 @@ const ReferralSection = () => {
     const subject = "Join Beauty Plaza - Special Offer Inside!";
     const body = `Hi there!\n\nI wanted to share Beauty Plaza with you. They offer amazing beauty services and you'll get $10 off your first appointment when you sign up using my referral link:\n\n${referralLink}\n\nCheck them out - you won't be disappointed!\n\nBest regards`;
     
-    window.open(`mailto:${referralEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    const mailtoLink = `mailto:${referralEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink);
     
     toast({
       title: "Email Opened",
@@ -131,8 +135,10 @@ const ReferralSection = () => {
               size="sm"
               className="px-3 hover:bg-gray-50"
               type="button"
+              disabled={isCopying}
             >
               <Copy className="w-4 h-4" />
+              {isCopying ? " Copying..." : ""}
             </Button>
           </div>
         </div>

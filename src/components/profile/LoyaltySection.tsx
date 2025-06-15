@@ -15,9 +15,10 @@ interface LoyaltySectionProps {
 const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) => {
   const [redeemAmount, setRedeemAmount] = useState("");
   const [currentPoints, setCurrentPoints] = useState(points);
+  const [isRedeeming, setIsRedeeming] = useState(false);
   const { toast } = useToast();
 
-  const handleRedeem = () => {
+  const handleRedeem = async () => {
     const amount = parseInt(redeemAmount);
     
     if (!redeemAmount || isNaN(amount)) {
@@ -56,22 +57,37 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
       return;
     }
 
-    const dollarValue = (amount / 10).toFixed(2);
-    
-    // Update points locally
-    setCurrentPoints(prev => prev - amount);
-    
-    // Call parent function if provided
-    if (onRedeemPoints) {
-      onRedeemPoints(amount);
+    setIsRedeeming(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const dollarValue = (amount / 10).toFixed(2);
+      
+      // Update points locally
+      setCurrentPoints(prev => prev - amount);
+      
+      // Call parent function if provided
+      if (onRedeemPoints) {
+        onRedeemPoints(amount);
+      }
+      
+      toast({
+        title: "Points Redeemed!",
+        description: `${amount} points redeemed for $${dollarValue} credit.`,
+      });
+      
+      setRedeemAmount("");
+    } catch (error) {
+      toast({
+        title: "Redemption Failed",
+        description: "Failed to redeem points. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRedeeming(false);
     }
-    
-    toast({
-      title: "Points Redeemed!",
-      description: `${amount} points redeemed for $${dollarValue} credit.`,
-    });
-    
-    setRedeemAmount("");
   };
 
   const getNextRewardLevel = () => {
@@ -87,7 +103,8 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
     return !redeemAmount || 
            isNaN(amount) || 
            amount < 100 || 
-           amount > currentPoints;
+           amount > currentPoints ||
+           isRedeeming;
   };
 
   return (
@@ -145,6 +162,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
               min="100"
               step="10"
               max={currentPoints}
+              disabled={isRedeeming}
             />
             <Button
               onClick={handleRedeem}
@@ -153,7 +171,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
               type="button"
             >
               <Gift className="w-4 h-4 mr-2" />
-              Redeem
+              {isRedeeming ? "Redeeming..." : "Redeem"}
             </Button>
           </div>
           {redeemAmount && parseInt(redeemAmount) >= 100 && parseInt(redeemAmount) <= currentPoints && (

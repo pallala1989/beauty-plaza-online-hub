@@ -44,31 +44,51 @@ const AppointmentHistory = () => {
     }
   ]);
 
-  const handleReschedule = (appointmentId: string) => {
-    // Here you would implement actual reschedule functionality
-    toast({
-      title: "Reschedule Requested",
-      description: "Your reschedule request has been submitted. We'll contact you shortly to confirm new timing.",
-    });
-    
-    // Update appointment status or navigate to reschedule page
-    console.log('Rescheduling appointment:', appointmentId);
+  const handleReschedule = async (appointmentId: string) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Reschedule Requested",
+        description: "Your reschedule request has been submitted. We'll contact you shortly to confirm new timing.",
+      });
+      
+      console.log('Rescheduling appointment:', appointmentId);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reschedule appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleCancel = (appointmentId: string) => {
-    // Here you would implement actual cancel functionality
-    setAppointments(prev => 
-      prev.map(apt => 
-        apt.id === appointmentId 
-          ? { ...apt, status: "cancelled" as const }
-          : apt
-      )
-    );
-    
-    toast({
-      title: "Appointment Cancelled",
-      description: "Your appointment has been successfully cancelled.",
-    });
+  const handleCancel = async (appointmentId: string) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update appointment status
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, status: "cancelled" as const }
+            : apt
+        )
+      );
+      
+      toast({
+        title: "Appointment Cancelled",
+        description: "Your appointment has been successfully cancelled.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {

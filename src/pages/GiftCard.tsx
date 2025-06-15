@@ -5,183 +5,224 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, Star, Sparkles, CreditCard, Smartphone } from "lucide-react";
-import { isValidEmail } from "@/components/auth/EmailValidation";
+import { Gift, Heart, Star, CreditCard, Smartphone, Wallet } from "lucide-react";
 
 const GiftCard = () => {
-  const [selectedAmount, setSelectedAmount] = useState(0);
-  const [customAmount, setCustomAmount] = useState("");
-  const [recipientInfo, setRecipientInfo] = useState({
-    name: "",
-    email: "",
-    message: ""
-  });
-  const [buyerInfo, setBuyerInfo] = useState({
-    name: "",
-    email: ""
-  });
-  const [errors, setErrors] = useState({
+  const [formData, setFormData] = useState({
+    amount: "",
     recipientName: "",
     recipientEmail: "",
-    buyerName: "",
-    buyerEmail: "",
-    amount: ""
+    senderName: "",
+    senderEmail: "",
+    message: ""
   });
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [errors, setErrors] = useState({
+    amount: "",
+    recipientName: "",
+    recipientEmail: "",
+    senderName: "",
+    senderEmail: ""
+  });
+  const [showPayment, setShowPayment] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { toast } = useToast();
 
-  const predefinedAmounts = [50, 75, 100, 150, 200, 300];
+  const presetAmounts = [25, 50, 75, 100, 150, 200];
 
-  const handleAmountSelect = (amount: number) => {
-    setSelectedAmount(amount);
-    setCustomAmount("");
-    setErrors(prev => ({ ...prev, amount: "" }));
-  };
-
-  const handleCustomAmount = (value: string) => {
-    setCustomAmount(value);
-    setSelectedAmount(0);
-    setErrors(prev => ({ ...prev, amount: "" }));
-  };
-
-  const getFinalAmount = () => {
-    return customAmount ? parseFloat(customAmount) : selectedAmount;
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const validateForm = () => {
     const newErrors = {
+      amount: "",
       recipientName: "",
       recipientEmail: "",
-      buyerName: "",
-      buyerEmail: "",
-      amount: ""
+      senderName: "",
+      senderEmail: ""
     };
 
-    const amount = getFinalAmount();
-    
-    if (!amount || amount < 25) {
-      newErrors.amount = "Gift card amount must be at least $25";
+    if (!formData.amount || parseFloat(formData.amount) < 25) {
+      newErrors.amount = "Minimum amount is $25";
+    } else if (parseFloat(formData.amount) > 500) {
+      newErrors.amount = "Maximum amount is $500";
     }
 
-    if (!recipientInfo.name.trim()) {
+    if (!formData.recipientName.trim()) {
       newErrors.recipientName = "Recipient name is required";
     }
 
-    if (!recipientInfo.email.trim()) {
+    if (!formData.recipientEmail.trim()) {
       newErrors.recipientEmail = "Recipient email is required";
-    } else if (!isValidEmail(recipientInfo.email)) {
-      newErrors.recipientEmail = "Please enter a valid recipient email address";
+    } else if (!isValidEmail(formData.recipientEmail)) {
+      newErrors.recipientEmail = "Please enter a valid email address";
     }
 
-    if (!buyerInfo.name.trim()) {
-      newErrors.buyerName = "Your name is required";
+    if (!formData.senderName.trim()) {
+      newErrors.senderName = "Your name is required";
     }
 
-    if (!buyerInfo.email.trim()) {
-      newErrors.buyerEmail = "Your email is required";
-    } else if (!isValidEmail(buyerInfo.email)) {
-      newErrors.buyerEmail = "Please enter a valid email address";
+    if (!formData.senderEmail.trim()) {
+      newErrors.senderEmail = "Your email is required";
+    } else if (!isValidEmail(formData.senderEmail)) {
+      newErrors.senderEmail = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
     return Object.values(newErrors).every(error => !error);
   };
 
-  const handlePurchase = () => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
+  };
+
+  const handleAmountSelect = (amount: number) => {
+    setFormData(prev => ({
+      ...prev,
+      amount: amount.toString()
+    }));
+    
+    if (errors.amount) {
+      setErrors(prev => ({
+        ...prev,
+        amount: ""
+      }));
+    }
+  };
+
+  const handleProceedToPayment = () => {
     if (!validateForm()) {
       toast({
-        title: "Validation Error",
-        description: "Please fix the errors below before proceeding.",
+        title: "Please fix the errors",
+        description: "Please correct the highlighted fields before proceeding.",
         variant: "destructive",
       });
       return;
     }
 
-    setShowPaymentOptions(true);
+    setShowPayment(true);
   };
 
-  const handlePaymentMethod = (method: string) => {
-    toast({
-      title: "Payment Processing",
-      description: `Redirecting to ${method} payment...`,
-    });
+  const handlePayment = async (paymentMethod: string) => {
+    setSelectedPayment(paymentMethod);
+    setIsProcessing(true);
 
-    // Here you would integrate with actual payment processors
-    // For now, simulate successful payment
-    setTimeout(() => {
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       toast({
-        title: "Purchase Successful!",
-        description: `Gift card for $${getFinalAmount()} has been sent to ${recipientInfo.email}`,
+        title: "Gift Card Purchased!",
+        description: `Gift card for $${formData.amount} has been sent to ${formData.recipientEmail}`,
       });
 
       // Reset form
-      setSelectedAmount(0);
-      setCustomAmount("");
-      setRecipientInfo({ name: "", email: "", message: "" });
-      setBuyerInfo({ name: "", email: "" });
-      setShowPaymentOptions(false);
-      setErrors({
+      setFormData({
+        amount: "",
         recipientName: "",
         recipientEmail: "",
-        buyerName: "",
-        buyerEmail: "",
-        amount: ""
+        senderName: "",
+        senderEmail: "",
+        message: ""
       });
-    }, 2000);
+      setShowPayment(false);
+      setSelectedPayment("");
+    } catch (error) {
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  if (showPaymentOptions) {
+  const paymentMethods = [
+    { id: "card", name: "Credit/Debit Card", icon: CreditCard, description: "Visa, Mastercard, American Express" },
+    { id: "paypal", name: "PayPal", icon: Wallet, description: "Pay with your PayPal account" },
+    { id: "apple", name: "Apple Pay", icon: Smartphone, description: "Quick and secure payment" },
+  ];
+
+  if (showPayment) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Choose Payment Method</CardTitle>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CreditCard className="w-6 h-6 mr-2 text-pink-600" />
+                Choose Payment Method
+              </CardTitle>
               <CardDescription>
-                Complete your gift card purchase of ${getFinalAmount()}
+                Complete your gift card purchase for ${formData.amount}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button
-                  onClick={() => handlePaymentMethod("Credit Card")}
-                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                >
-                  <CreditCard className="w-8 h-8" />
-                  <span>Credit Card</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handlePaymentMethod("PayPal")}
-                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
-                >
-                  <Smartphone className="w-8 h-8" />
-                  <span>PayPal</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handlePaymentMethod("Apple Pay")}
-                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black"
-                >
-                  <Smartphone className="w-8 h-8" />
-                  <span>Apple Pay</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handlePaymentMethod("Google Pay")}
-                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                >
-                  <Smartphone className="w-8 h-8" />
-                  <span>Google Pay</span>
-                </Button>
+              <div className="bg-pink-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Order Summary</h3>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>Gift Card Amount:</span>
+                    <span>${formData.amount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Processing Fee:</span>
+                    <span>$0.00</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                    <span>Total:</span>
+                    <span>${formData.amount}</span>
+                  </div>
+                </div>
               </div>
-              
+
+              <div className="space-y-3">
+                {paymentMethods.map((method) => {
+                  const Icon = method.icon;
+                  return (
+                    <Button
+                      key={method.id}
+                      onClick={() => handlePayment(method.id)}
+                      disabled={isProcessing}
+                      className="w-full justify-start h-auto p-4 border-2 border-gray-200 bg-white text-gray-900 hover:border-pink-300 hover:bg-pink-50"
+                      variant="outline"
+                    >
+                      <Icon className="w-6 h-6 mr-3 text-pink-600" />
+                      <div className="text-left">
+                        <div className="font-semibold">{method.name}</div>
+                        <div className="text-sm text-gray-500">{method.description}</div>
+                      </div>
+                      {isProcessing && selectedPayment === method.id && (
+                        <div className="ml-auto">Processing...</div>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+
               <Button
-                onClick={() => setShowPaymentOptions(false)}
+                onClick={() => setShowPayment(false)}
                 variant="outline"
-                className="w-full mt-4"
+                className="w-full"
+                disabled={isProcessing}
               >
                 Back to Gift Card Details
               </Button>
@@ -204,203 +245,213 @@ const GiftCard = () => {
             Gift Cards
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Give the gift of beauty and relaxation. Perfect for any occasion, our gift cards never expire and can be used for any of our premium services.
+            Give the gift of beauty and self-care. Perfect for any occasion!
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Gift Card Preview */}
           <div className="space-y-6">
-            <Card className="bg-gradient-to-r from-pink-500 to-purple-600 text-white overflow-hidden">
-              <CardContent className="p-8 relative">
-                <div className="absolute top-4 right-4 opacity-20">
-                  <Sparkles className="w-16 h-16" />
+            <Card className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+              <CardContent className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">Beauty Plaza</h3>
+                    <p className="text-pink-100">Gift Card</p>
+                  </div>
+                  <Heart className="w-8 h-8 text-pink-200" />
                 </div>
+                
                 <div className="space-y-4">
-                  <div className="text-2xl font-bold">Beauty Plaza</div>
-                  <div className="text-lg">Gift Card</div>
-                  <div className="text-3xl font-bold">
-                    ${getFinalAmount() || "00"}
+                  <div>
+                    <p className="text-pink-100 text-sm">Amount</p>
+                    <p className="text-3xl font-bold">
+                      ${formData.amount || "0"}
+                    </p>
                   </div>
-                  <div className="text-sm opacity-90">
-                    {recipientInfo.name || "Recipient Name"}
+                  
+                  <div>
+                    <p className="text-pink-100 text-sm">To</p>
+                    <p className="text-lg font-semibold">
+                      {formData.recipientName || "Recipient Name"}
+                    </p>
                   </div>
-                  {recipientInfo.message && (
-                    <div className="text-sm opacity-90 italic">
-                      "{recipientInfo.message}"
+                  
+                  {formData.message && (
+                    <div>
+                      <p className="text-pink-100 text-sm">Message</p>
+                      <p className="text-sm italic">"{formData.message}"</p>
                     </div>
                   )}
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-pink-400">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-pink-100 text-xs">From</p>
+                      <p className="text-sm">{formData.senderName || "Your Name"}</p>
+                    </div>
+                    <Star className="w-6 h-6 text-pink-200" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Gift Card Features */}
+            {/* Benefits */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Star className="w-5 h-5 mr-2 text-pink-600" />
-                  Gift Card Benefits
-                </CardTitle>
+                <CardTitle>Why Choose Our Gift Cards?</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                  <span>Never expires</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                  <span className="text-sm">Never expires</span>
                 </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                  <span>Can be used for any service</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                  <span className="text-sm">Can be used for any service</span>
                 </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                  <span>Transferable to others</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                  <span className="text-sm">Digital delivery within minutes</span>
                 </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                  <span>Digital delivery via email</span>
-                </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                  <span>Physical card available upon request</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                  <span className="text-sm">Perfect for any occasion</span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Purchase Form */}
-          <div className="space-y-6">
-            {/* Amount Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Select Amount</CardTitle>
-                <CardDescription>Choose a predefined amount or enter a custom value</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {predefinedAmounts.map((amount) => (
+          {/* Gift Card Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Your Gift Card</CardTitle>
+              <CardDescription>
+                Fill in the details below to create a personalized gift card
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Amount Selection */}
+              <div>
+                <Label>Gift Card Amount *</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2 mb-3">
+                  {presetAmounts.map((amount) => (
                     <Button
                       key={amount}
-                      variant={selectedAmount === amount ? "default" : "outline"}
-                      className={`h-12 ${
-                        selectedAmount === amount
-                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                          : "border-pink-200 text-pink-600 hover:bg-pink-50"
-                      }`}
                       onClick={() => handleAmountSelect(amount)}
+                      variant={formData.amount === amount.toString() ? "default" : "outline"}
+                      className={formData.amount === amount.toString() 
+                        ? "bg-pink-600 hover:bg-pink-700" 
+                        : "hover:bg-pink-50"
+                      }
+                      type="button"
                     >
                       ${amount}
                     </Button>
                   ))}
                 </div>
+                <Input
+                  type="number"
+                  placeholder="Enter custom amount"
+                  value={formData.amount}
+                  onChange={handleInputChange}
+                  name="amount"
+                  min="25"
+                  max="500"
+                  className={errors.amount ? "border-red-300" : ""}
+                />
+                {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+                <p className="text-xs text-gray-500 mt-1">Minimum $25, Maximum $500</p>
+              </div>
+
+              {/* Recipient Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 border-b pb-2">Recipient Information</h3>
                 
                 <div>
-                  <Label htmlFor="custom-amount">Custom Amount (minimum $25)</Label>
+                  <Label htmlFor="recipientName">Recipient Name *</Label>
                   <Input
-                    id="custom-amount"
-                    type="number"
-                    min="25"
-                    placeholder="Enter custom amount"
-                    value={customAmount}
-                    onChange={(e) => handleCustomAmount(e.target.value)}
-                    className={errors.amount ? "border-red-300" : ""}
-                  />
-                  {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recipient Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recipient Information</CardTitle>
-                <CardDescription>Who is this gift card for?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="recipient-name">Recipient Name *</Label>
-                  <Input
-                    id="recipient-name"
-                    value={recipientInfo.name}
-                    onChange={(e) => setRecipientInfo({...recipientInfo, name: e.target.value})}
-                    placeholder="Enter recipient's name"
+                    id="recipientName"
+                    name="recipientName"
+                    value={formData.recipientName}
+                    onChange={handleInputChange}
+                    placeholder="Enter recipient's full name"
                     className={errors.recipientName ? "border-red-300" : ""}
                   />
                   {errors.recipientName && <p className="text-red-500 text-sm mt-1">{errors.recipientName}</p>}
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="recipient-email">Recipient Email *</Label>
+                  <Label htmlFor="recipientEmail">Recipient Email *</Label>
                   <Input
-                    id="recipient-email"
+                    id="recipientEmail"
+                    name="recipientEmail"
                     type="email"
-                    value={recipientInfo.email}
-                    onChange={(e) => setRecipientInfo({...recipientInfo, email: e.target.value})}
-                    placeholder="Enter recipient's email"
+                    value={formData.recipientEmail}
+                    onChange={handleInputChange}
+                    placeholder="recipient@example.com"
                     className={errors.recipientEmail ? "border-red-300" : ""}
                   />
                   {errors.recipientEmail && <p className="text-red-500 text-sm mt-1">{errors.recipientEmail}</p>}
                 </div>
-                
-                <div>
-                  <Label htmlFor="message">Personal Message (Optional)</Label>
-                  <Textarea
-                    id="message"
-                    value={recipientInfo.message}
-                    onChange={(e) => setRecipientInfo({...recipientInfo, message: e.target.value})}
-                    placeholder="Write a personal message..."
-                    rows={3}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Buyer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Information</CardTitle>
-                <CardDescription>We need your details for the purchase</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="buyer-name">Your Name *</Label>
-                  <Input
-                    id="buyer-name"
-                    value={buyerInfo.name}
-                    onChange={(e) => setBuyerInfo({...buyerInfo, name: e.target.value})}
-                    placeholder="Enter your name"
-                    className={errors.buyerName ? "border-red-300" : ""}
-                  />
-                  {errors.buyerName && <p className="text-red-500 text-sm mt-1">{errors.buyerName}</p>}
-                </div>
+              {/* Sender Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 border-b pb-2">Your Information</h3>
                 
                 <div>
-                  <Label htmlFor="buyer-email">Your Email *</Label>
+                  <Label htmlFor="senderName">Your Name *</Label>
                   <Input
-                    id="buyer-email"
+                    id="senderName"
+                    name="senderName"
+                    value={formData.senderName}
+                    onChange={handleInputChange}
+                    placeholder="Enter your full name"
+                    className={errors.senderName ? "border-red-300" : ""}
+                  />
+                  {errors.senderName && <p className="text-red-500 text-sm mt-1">{errors.senderName}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="senderEmail">Your Email *</Label>
+                  <Input
+                    id="senderEmail"
+                    name="senderEmail"
                     type="email"
-                    value={buyerInfo.email}
-                    onChange={(e) => setBuyerInfo({...buyerInfo, email: e.target.value})}
-                    placeholder="Enter your email"
-                    className={errors.buyerEmail ? "border-red-300" : ""}
+                    value={formData.senderEmail}
+                    onChange={handleInputChange}
+                    placeholder="your.email@example.com"
+                    className={errors.senderEmail ? "border-red-300" : ""}
                   />
-                  {errors.buyerEmail && <p className="text-red-500 text-sm mt-1">{errors.buyerEmail}</p>}
+                  {errors.senderEmail && <p className="text-red-500 text-sm mt-1">{errors.senderEmail}</p>}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Purchase Button */}
-            <Button
-              onClick={handlePurchase}
-              disabled={!getFinalAmount() || getFinalAmount() < 25}
-              className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 text-lg font-semibold"
-            >
-              Purchase Gift Card - ${getFinalAmount() || "0"}
-            </Button>
+              {/* Personal Message */}
+              <div>
+                <Label htmlFor="message">Personal Message (Optional)</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  placeholder="Write a personal message for the recipient..."
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500 mt-1">This message will appear on the gift card</p>
+              </div>
 
-            <p className="text-sm text-gray-500 text-center">
-              Gift cards will be delivered instantly via email after payment confirmation.
-            </p>
-          </div>
+              <Button
+                onClick={handleProceedToPayment}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+                size="lg"
+              >
+                Proceed to Payment
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
