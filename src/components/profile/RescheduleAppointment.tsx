@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Clock, User } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import CurrentAppointmentInfo from "./reschedule/CurrentAppointmentInfo";
+import DateSelection from "./reschedule/DateSelection";
+import TechnicianSelection from "./reschedule/TechnicianSelection";
+import TimeSlotSelection from "./reschedule/TimeSlotSelection";
+import NewAppointmentSummary from "./reschedule/NewAppointmentSummary";
 
 interface RescheduleAppointmentProps {
   appointmentId: string;
@@ -48,7 +50,6 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch available technicians
   const fetchTechnicians = async () => {
     try {
       const { data, error } = await supabase
@@ -68,7 +69,6 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
     }
   };
 
-  // Fetch booked slots for selected technician and date
   const fetchBookedSlots = async (date: Date, technicianId: string) => {
     if (!date || !technicianId) return;
 
@@ -80,7 +80,7 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
         .eq('technician_id', technicianId)
         .eq('appointment_date', formattedDate)
         .in('status', ['scheduled', 'confirmed'])
-        .neq('id', appointmentId); // Exclude current appointment
+        .neq('id', appointmentId);
       
       if (error) throw error;
       
@@ -92,7 +92,6 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
     }
   };
 
-  // Handle reschedule submission
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime || !selectedTechnicianId) {
       toast({
@@ -150,22 +149,6 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
     }
   }, [selectedDate, selectedTechnicianId]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -186,138 +169,45 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Current Appointment Info */}
-          <Card className="bg-gray-50">
-            <CardHeader>
-              <CardTitle className="text-sm">Current Appointment</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <User className="w-4 h-4 mr-2" />
-                {serviceName}
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                {formatDate(currentDate)}
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Clock className="w-4 h-4 mr-2" />
-                {formatTime(currentTime)}
-              </div>
-            </CardContent>
-          </Card>
+          <CurrentAppointmentInfo
+            serviceName={serviceName}
+            currentDate={currentDate}
+            currentTime={currentTime}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Date Selection */}
-            <div>
-              <Label className="text-base font-semibold">Select New Date:</Label>
-              <div className="mt-2 flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  disabled={(date) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return date < today || date.getDay() === 0;
-                  }}
-                  className="rounded-md border"
-                />
-              </div>
-            </div>
+            <DateSelection
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
 
-            {/* Technician & Time Selection */}
             <div className="space-y-4">
-              {/* Technician Selection */}
-              <div>
-                <Label className="text-base font-semibold">Select Technician:</Label>
-                <div className="grid grid-cols-1 gap-2 mt-2">
-                  {technicians.map((technician) => (
-                    <Button
-                      key={technician.id}
-                      variant={selectedTechnicianId === technician.id ? "default" : "outline"}
-                      className={`justify-start ${
-                        selectedTechnicianId === technician.id
-                          ? "bg-green-500 text-white hover:bg-green-600"
-                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedTechnicianId(technician.id)}
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      {technician.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              <TechnicianSelection
+                technicians={technicians}
+                selectedTechnicianId={selectedTechnicianId}
+                onTechnicianSelect={setSelectedTechnicianId}
+              />
 
-              {/* Time Selection */}
               {selectedDate && selectedTechnicianId && (
-                <div>
-                  <Label className="text-base font-semibold">Select New Time:</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                    {timeSlots.map((time) => {
-                      const isBooked = bookedSlots.includes(time);
-                      const isSelected = selectedTime === time;
-                      
-                      return (
-                        <Button
-                          key={time}
-                          variant={isSelected ? "default" : "outline"}
-                          disabled={isBooked}
-                          className={`text-sm ${
-                            isSelected
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : isBooked
-                              ? "bg-red-100 text-red-500 border-red-200 cursor-not-allowed opacity-50"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:border-green-300 hover:text-green-700"
-                          }`}
-                          onClick={() => !isBooked && setSelectedTime(time)}
-                        >
-                          {formatTime(time)}
-                          {isBooked && " (Unavailable)"}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-green-500 rounded"></div>
-                      <span>Available</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                      <span>Unavailable</span>
-                    </div>
-                  </div>
-                </div>
+                <TimeSlotSelection
+                  timeSlots={timeSlots}
+                  bookedSlots={bookedSlots}
+                  selectedTime={selectedTime}
+                  onTimeSelect={setSelectedTime}
+                />
               )}
             </div>
           </div>
 
-          {/* New Appointment Summary */}
           {selectedDate && selectedTime && selectedTechnicianId && (
-            <Card className="bg-green-50 border-green-200">
-              <CardHeader>
-                <CardTitle className="text-sm text-green-800">New Appointment Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center text-sm text-green-700">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
-                  {formatDate(selectedDate.toISOString())}
-                </div>
-                <div className="flex items-center text-sm text-green-700">
-                  <Clock className="w-4 h-4 mr-2" />
-                  {formatTime(selectedTime)}
-                </div>
-                <div className="flex items-center text-sm text-green-700">
-                  <User className="w-4 h-4 mr-2" />
-                  {technicians.find(t => t.id === selectedTechnicianId)?.name}
-                </div>
-              </CardContent>
-            </Card>
+            <NewAppointmentSummary
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+              selectedTechnicianId={selectedTechnicianId}
+              technicians={technicians}
+            />
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button
               variant="outline"
