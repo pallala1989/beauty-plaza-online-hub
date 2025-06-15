@@ -31,7 +31,6 @@ export const useBookingData = () => {
     try {
       console.log('Fetching technicians...');
       
-      // First, let's try a simple query to see if we can access the table at all
       const { data, error, count } = await supabase
         .from('technicians')
         .select('*', { count: 'exact' });
@@ -50,14 +49,12 @@ export const useBookingData = () => {
       console.log('Raw technicians data:', data);
       console.log('Technicians count:', count);
       
-      // Filter for available technicians
       const availableTechnicians = data?.filter(tech => tech.is_available === true) || [];
       console.log('Available technicians:', availableTechnicians);
       
       setTechnicians(availableTechnicians);
     } catch (error) {
       console.error('Error in fetchTechnicians:', error);
-      // Set empty array on error to prevent undefined issues
       setTechnicians([]);
     }
   };
@@ -65,16 +62,22 @@ export const useBookingData = () => {
   const fetchBookedSlots = async (selectedDate: Date, selectedTechnician: string) => {
     if (!selectedDate || !selectedTechnician) {
       console.log('fetchBookedSlots: Missing date or technician', { selectedDate, selectedTechnician });
+      setBookedSlots([]);
       return;
     }
 
     try {
-      console.log('Fetching booked slots for:', { selectedDate, selectedTechnician });
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      console.log('Fetching booked slots for:', { 
+        selectedDate: formattedDate, 
+        selectedTechnician 
+      });
+      
       const { data, error } = await supabase
         .from('appointments')
-        .select('appointment_time')
+        .select('appointment_time, status')
         .eq('technician_id', selectedTechnician)
-        .eq('appointment_date', format(selectedDate, 'yyyy-MM-dd'))
+        .eq('appointment_date', formattedDate)
         .in('status', ['scheduled', 'confirmed']);
       
       if (error) {
@@ -83,7 +86,7 @@ export const useBookingData = () => {
       }
       
       const booked = data?.map(appointment => appointment.appointment_time) || [];
-      console.log('Booked slots found:', booked);
+      console.log('Booked slots found for technician', selectedTechnician, 'on', formattedDate, ':', booked);
       setBookedSlots(booked);
     } catch (error) {
       console.error('Error fetching booked slots:', error);
@@ -97,15 +100,20 @@ export const useBookingData = () => {
     fetchTechnicians();
   }, []);
 
-  // Add effect to log when technicians state changes
   useEffect(() => {
     console.log('Technicians state updated:', technicians);
   }, [technicians]);
+
+  // Clear booked slots when technician changes
+  const clearBookedSlots = () => {
+    setBookedSlots([]);
+  };
 
   return {
     services,
     technicians,
     bookedSlots,
-    fetchBookedSlots
+    fetchBookedSlots,
+    clearBookedSlots
   };
 };

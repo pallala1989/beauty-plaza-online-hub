@@ -25,6 +25,8 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   onDateSelect,
   onTimeSelect
 }) => {
+  console.log('DateTimeSelection rendered with bookedSlots:', bookedSlots);
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,7 +36,11 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
             mode="single"
             selected={selectedDate}
             onSelect={onDateSelect}
-            disabled={(date) => date < new Date() || date.getDay() === 0}
+            disabled={(date) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              return date < today || date.getDay() === 0; // Disable past dates and Sundays
+            }}
             className="rounded-md border"
           />
         </div>
@@ -46,16 +52,20 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
             {timeSlots.map((time) => {
               const isBooked = bookedSlots.includes(time);
+              const isSelected = selectedTime === time;
+              
+              console.log(`Time slot ${time}:`, { isBooked, isSelected, bookedSlots });
+              
               return (
                 <Button
                   key={time}
-                  variant={selectedTime === time ? "default" : "outline"}
+                  variant={isSelected ? "default" : "outline"}
                   disabled={isBooked}
                   className={`text-sm ${
-                    selectedTime === time
+                    isSelected
                       ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
                       : isBooked
-                      ? "opacity-50 cursor-not-allowed"
+                      ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
                       : "border-pink-200 text-pink-600 hover:bg-pink-50"
                   }`}
                   onClick={() => !isBooked && onTimeSelect(time)}
@@ -66,6 +76,11 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
               );
             })}
           </div>
+          {bookedSlots.length > 0 && (
+            <p className="text-sm text-gray-600 mt-2">
+              Unavailable times are marked as "Booked"
+            </p>
+          )}
         </div>
       )}
     </div>
