@@ -16,8 +16,8 @@ export const useSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      // Use rpc call to fetch settings to avoid TypeScript issues
-      const { data, error } = await supabase.rpc('get_settings');
+      // Use rpc call to fetch settings with type assertion
+      const { data, error } = await (supabase as any).rpc('get_settings');
       
       if (error) {
         // Fallback to direct query with type assertion
