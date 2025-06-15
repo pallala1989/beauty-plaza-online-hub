@@ -74,6 +74,19 @@ export const useBookingFlow = () => {
 
   const handleMonthChange = (month: Date) => {
     setCurrentMonth(month);
+    setSelectedDate(undefined);
+    setSelectedTime("");
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedTime(""); // Always reset time when date changes
+
+    if (date) {
+      if (date.getMonth() !== currentMonth.getMonth() || date.getFullYear() !== currentMonth.getFullYear()) {
+        setCurrentMonth(date);
+      }
+    }
   };
 
   const bookedSlots = useMemo(() => {
@@ -154,7 +167,7 @@ export const useBookingFlow = () => {
     fullyBookedDays,
     setSelectedService,
     setSelectedTechnician,
-    setSelectedDate,
+    handleDateSelect,
     setSelectedTime,
     setServiceType,
     setOtp,

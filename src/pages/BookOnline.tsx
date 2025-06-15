@@ -1,4 +1,3 @@
-
 import React from "react";
 import BookingProgressIndicator from "@/components/booking/BookingProgressIndicator";
 import BookingFlow from "@/components/booking/BookingFlow";
@@ -27,7 +26,7 @@ const BookOnline = () => {
     fullyBookedDays,
     setSelectedService,
     setSelectedTechnician,
-    setSelectedDate,
+    handleDateSelect,
     setSelectedTime,
     setServiceType,
     setOtp,
@@ -88,7 +87,7 @@ const BookOnline = () => {
           onServiceSelect={setSelectedService}
           onTechnicianSelect={handleTechnicianSelect}
           onServiceTypeChange={handleServiceTypeChange}
-          onDateSelect={setSelectedDate}
+          onDateSelect={handleDateSelect}
           onTimeSelect={setSelectedTime}
           onCustomerInfoChange={setCustomerInfo}
           onPhoneChange={handlePhoneChange}
