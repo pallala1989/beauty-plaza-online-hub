@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -7,6 +6,7 @@ export const useBookingData = () => {
   const [services, setServices] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [isFetchingSlots, setIsFetchingSlots] = useState(false);
 
   const fetchServices = async () => {
     try {
@@ -66,6 +66,7 @@ export const useBookingData = () => {
       return;
     }
 
+    setIsFetchingSlots(true);
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       console.log('Fetching booked slots for:', { 
@@ -93,6 +94,8 @@ export const useBookingData = () => {
     } catch (error) {
       console.error('Error fetching booked slots:', error);
       setBookedSlots([]);
+    } finally {
+      setIsFetchingSlots(false);
     }
   };
 
@@ -123,6 +126,7 @@ export const useBookingData = () => {
     services,
     technicians,
     bookedSlots,
+    isFetchingSlots,
     fetchBookedSlots,
     clearBookedSlots,
     refreshBookedSlots

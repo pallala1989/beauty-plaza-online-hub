@@ -14,6 +14,7 @@ interface BookingFlowProps {
   services: any[];
   technicians: any[];
   bookedSlots: string[];
+  isFetchingSlots: boolean;
   selectedService: string;
   selectedTechnician: string;
   selectedDate?: Date;
@@ -39,6 +40,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   services,
   technicians,
   bookedSlots,
+  isFetchingSlots,
   selectedService,
   selectedTechnician,
   selectedDate,
@@ -108,6 +110,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
             selectedDate={selectedDate}
             selectedTime={selectedTime}
             bookedSlots={bookedSlots}
+            isFetchingSlots={isFetchingSlots}
             onDateSelect={onDateSelect}
             onTimeSelect={onTimeSelect}
           />

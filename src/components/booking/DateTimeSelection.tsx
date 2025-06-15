@@ -3,11 +3,13 @@ import React from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DateTimeSelectionProps {
   selectedDate?: Date;
   selectedTime: string;
   bookedSlots: string[];
+  isFetchingSlots: boolean;
   onDateSelect: (date: Date | undefined) => void;
   onTimeSelect: (time: string) => void;
 }
@@ -22,6 +24,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   selectedDate,
   selectedTime,
   bookedSlots,
+  isFetchingSlots,
   onDateSelect,
   onTimeSelect
 }) => {
@@ -57,37 +60,47 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
       {selectedDate && (
         <div>
           <Label>Select time:</Label>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
-            {timeSlots.map((time) => {
-              const isBooked = bookedSlots.includes(time);
-              const isSelected = selectedTime === time;
-              
-              console.log(`Time slot ${time}:`, { isBooked, isSelected, bookedSlots });
-              
-              return (
-                <Button
-                  key={time}
-                  variant={isSelected ? "default" : "outline"}
-                  disabled={isBooked}
-                  className={`text-sm ${
-                    isSelected
-                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                      : isBooked
-                      ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500 hover:bg-gray-200"
-                      : "border-pink-200 text-pink-600 hover:bg-pink-50"
-                  }`}
-                  onClick={() => handleTimeSelect(time)}
-                >
-                  {time}
-                  {isBooked && " (Booked)"}
-                </Button>
-              );
-            })}
-          </div>
-          {bookedSlots.length > 0 && (
-            <p className="text-sm text-gray-600 mt-2">
-              Unavailable times are marked as "Booked" and cannot be selected
-            </p>
+          {isFetchingSlots ? (
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
+              {Array.from({ length: 18 }).map((_, index) => (
+                <Skeleton key={index} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
+                {timeSlots.map((time) => {
+                  const isBooked = bookedSlots.includes(time);
+                  const isSelected = selectedTime === time;
+                  
+                  console.log(`Time slot ${time}:`, { isBooked, isSelected, bookedSlots });
+                  
+                  return (
+                    <Button
+                      key={time}
+                      variant={isSelected ? "default" : "outline"}
+                      disabled={isBooked}
+                      className={`text-sm ${
+                        isSelected
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                          : isBooked
+                          ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500 hover:bg-gray-200"
+                          : "border-pink-200 text-pink-600 hover:bg-pink-50"
+                      }`}
+                      onClick={() => handleTimeSelect(time)}
+                    >
+                      {time}
+                      {isBooked && " (Booked)"}
+                    </Button>
+                  );
+                })}
+              </div>
+              {bookedSlots.length > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Unavailable times are marked as "Booked" and cannot be selected
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

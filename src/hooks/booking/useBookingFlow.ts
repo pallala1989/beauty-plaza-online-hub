@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useBookingData } from "@/hooks/useBookingData";
 import { useBookingState } from "./useBookingState";
@@ -5,7 +6,7 @@ import { useBookingValidation } from "./useBookingValidation";
 import { useBookingActions } from "./useBookingActions";
 
 export const useBookingFlow = () => {
-  const { services, technicians, bookedSlots, fetchBookedSlots, clearBookedSlots, refreshBookedSlots } = useBookingData();
+  const { services, technicians, bookedSlots, isFetchingSlots, fetchBookedSlots, clearBookedSlots, refreshBookedSlots } = useBookingData();
   
   const {
     step,
@@ -133,6 +134,7 @@ export const useBookingFlow = () => {
     services,
     technicians,
     bookedSlots,
+    isFetchingSlots,
     setSelectedService,
     setSelectedTechnician,
     setSelectedDate,

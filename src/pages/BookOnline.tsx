@@ -23,6 +23,7 @@ const BookOnline = () => {
     services,
     technicians,
     bookedSlots,
+    isFetchingSlots,
     setSelectedService,
     setSelectedTechnician,
     setSelectedDate,
@@ -73,6 +74,7 @@ const BookOnline = () => {
           services={services}
           technicians={technicians}
           bookedSlots={bookedSlots}
+          isFetchingSlots={isFetchingSlots}
           selectedService={selectedService}
           selectedTechnician={selectedTechnician}
           selectedDate={selectedDate}
