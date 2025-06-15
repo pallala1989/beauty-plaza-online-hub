@@ -87,7 +87,7 @@ export const useBookingData = () => {
         throw error;
       }
       
-      const booked = data?.map(appointment => appointment.appointment_time) || [];
+      const booked = data?.map(appointment => appointment.appointment_time.slice(0, 5)) || [];
       console.log('Booked slots found for technician', selectedTechnician, 'on', formattedDate, ':', booked);
       setBookedSlots(booked);
     } catch (error) {

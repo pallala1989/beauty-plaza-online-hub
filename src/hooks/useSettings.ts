@@ -8,6 +8,10 @@ interface Settings {
   loyalty_settings: { points_per_dollar: number; min_redemption: number; redemption_rate: number };
   in_home_fee: number;
   loyalty_tiers: { bronze: number; silver: number; gold: number; platinum: number };
+  contact_phone?: string;
+  contact_email?: string;
+  contact_address_line1?: string;
+  contact_address_line2?: string;
 }
 
 export const useSettings = () => {
@@ -44,7 +48,11 @@ export const useSettings = () => {
         referral_amounts: { referrer_credit: 10, referred_discount: 10 },
         loyalty_settings: { points_per_dollar: 10, min_redemption: 100, redemption_rate: 10 },
         in_home_fee: 25,
-        loyalty_tiers: { bronze: 0, silver: 500, gold: 1000, platinum: 2000 }
+        loyalty_tiers: { bronze: 0, silver: 500, gold: 1000, platinum: 2000 },
+        contact_phone: '(903) 921-0271',
+        contact_email: 'info@beautyplaza.com',
+        contact_address_line1: '2604 Jacqueline Dr',
+        contact_address_line2: 'Wilmington, DE - 19810'
       });
     } finally {
       setIsLoading(false);
@@ -54,11 +62,19 @@ export const useSettings = () => {
   const updateSetting = async (key: string, value: any) => {
     try {
       // Use type assertion to bypass TypeScript checking
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('settings')
-        .upsert({ key, value });
+        .update({ value })
+        .eq('key', key)
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error || !data) {
+        const { error: upsertError } = await (supabase as any)
+          .from('settings')
+          .upsert({ key, value });
+        if (upsertError) throw upsertError;
+      }
       
       // Refresh settings
       await fetchSettings();

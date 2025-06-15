@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { isValidEmail } from "@/components/auth/EmailValidation";
 
 const Contact = () => {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -141,8 +142,8 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Address</h3>
                     <p className="text-gray-600">
-                      123 Beauty Street<br />
-                      Wilmington, DE 19801<br />
+                      {settings?.contact_address_line1 || "Loading..."}<br />
+                      {settings?.contact_address_line2 || ""}<br />
                       United States
                     </p>
                   </div>
@@ -153,10 +154,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone</h3>
                     <a 
-                      href="tel:+13024567890" 
+                      href={`tel:${settings?.contact_phone || ""}`} 
                       className="text-pink-600 hover:text-pink-700 transition-colors"
                     >
-                      (302) 456-7890
+                      {settings?.contact_phone || "Loading..."}
                     </a>
                   </div>
                 </div>
@@ -166,10 +167,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Email</h3>
                     <a 
-                      href="mailto:info@beautyplaza.com" 
+                      href={`mailto:${settings?.contact_email || ""}`} 
                       className="text-pink-600 hover:text-pink-700 transition-colors"
                     >
-                      info@beautyplaza.com
+                      {settings?.contact_email || "Loading..."}
                     </a>
                   </div>
                 </div>

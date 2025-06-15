@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Settings, DollarSign, Gift, Users, Award } from "lucide-react";
+import { Settings, DollarSign, Gift, Users, Award, Contact } from "lucide-react";
 
 const AdminSettings = () => {
   const { user, profile } = useAuth();
@@ -33,20 +32,31 @@ const AdminSettings = () => {
     platinum: 2000
   });
   const [inHomeFee, setInHomeFee] = useState(25);
-
-  // Check if user is admin
-  if (!user || profile?.role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactAddress1, setContactAddress1] = useState("");
+  const [contactAddress2, setContactAddress2] = useState("");
 
   useEffect(() => {
+    // Debugging for admin role
+    console.log("AdminSettings Auth Check:", { user, profile, isAdmin: profile?.role === 'admin' });
+
     if (settings) {
       setReferralAmounts(settings.referral_amounts || { referrer_credit: 10, referred_discount: 10 });
       setLoyaltySettings(settings.loyalty_settings || { points_per_dollar: 10, min_redemption: 100, redemption_rate: 10 });
       setLoyaltyTiers(settings.loyalty_tiers || { bronze: 0, silver: 500, gold: 1000, platinum: 2000 });
       setInHomeFee(settings.in_home_fee || 25);
+      setContactPhone(settings.contact_phone || "");
+      setContactEmail(settings.contact_email || "");
+      setContactAddress1(settings.contact_address_line1 || "");
+      setContactAddress2(settings.contact_address_line2 || "");
     }
-  }, [settings]);
+  }, [settings, user, profile]);
+
+  // Check if user is admin
+  if (!user || profile?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
 
   const handleUpdateSettings = async () => {
     setIsUpdating(true);
@@ -55,7 +65,11 @@ const AdminSettings = () => {
         updateSetting('referral_amounts', referralAmounts),
         updateSetting('loyalty_settings', loyaltySettings),
         updateSetting('loyalty_tiers', loyaltyTiers),
-        updateSetting('in_home_fee', inHomeFee)
+        updateSetting('in_home_fee', inHomeFee),
+        updateSetting('contact_phone', contactPhone),
+        updateSetting('contact_email', contactEmail),
+        updateSetting('contact_address_line1', contactAddress1),
+        updateSetting('contact_address_line2', contactAddress2),
       ]);
 
       toast({
@@ -95,6 +109,55 @@ const AdminSettings = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Contact Settings */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Contact className="w-5 h-5 mr-2 text-blue-600" />
+                Contact Information
+              </CardTitle>
+              <CardDescription>Update public contact details for the website</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="contact_phone">Contact Phone</Label>
+                <Input
+                  id="contact_phone"
+                  type="text"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="contact_email">Contact Email</Label>
+                <Input
+                  id="contact_email"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="contact_address1">Address Line 1</Label>
+                <Input
+                  id="contact_address1"
+                  type="text"
+                  value={contactAddress1}
+                  onChange={(e) => setContactAddress1(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="contact_address2">Address Line 2</Label>
+                <Input
+                  id="contact_address2"
+                  type="text"
+                  value={contactAddress2}
+                  onChange={(e) => setContactAddress2(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Referral Settings */}
           <Card>
             <CardHeader>

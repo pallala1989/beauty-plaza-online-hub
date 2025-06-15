@@ -1,8 +1,11 @@
 
 import { Link } from "react-router-dom";
 import { Phone } from "lucide-react";
+import { useSettings } from "@/hooks/useSettings";
 
 const Footer = () => {
+  const { settings } = useSettings();
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -18,7 +21,7 @@ const Footer = () => {
             </p>
             <div className="flex items-center space-x-2 text-gray-400">
               <Phone className="w-4 h-4" />
-              <span>(903) 921-0271</span>
+              <span>{settings?.contact_phone || "(903) 921-0271"}</span>
             </div>
           </div>
 
@@ -45,8 +48,8 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Visit Us</h3>
             <div className="text-gray-400 space-y-2">
-              <p>2604 Jacqueline Dr</p>
-              <p>Wilmington, DE - 19810</p>
+              <p>{settings?.contact_address_line1 || "2604 Jacqueline Dr"}</p>
+              <p>{settings?.contact_address_line2 || "Wilmington, DE - 19810"}</p>
               <p className="mt-4">
                 <strong className="text-white">Hours:</strong><br />
                 Mon-Sat: 9AM - 7PM<br />
@@ -54,11 +57,11 @@ const Footer = () => {
               </p>
               <div className="mt-4">
                 <a 
-                  href="tel:+19039210271" 
+                  href={`tel:${settings?.contact_phone || "+19039210271"}`} 
                   className="inline-flex items-center text-pink-400 hover:text-pink-300 transition-colors"
                 >
                   <Phone className="w-4 h-4 mr-2" />
-                  (903) 921-0271
+                  {settings?.contact_phone || "(903) 921-0271"}
                 </a>
               </div>
             </div>
