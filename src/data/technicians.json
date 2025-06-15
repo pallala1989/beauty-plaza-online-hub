@@ -1,0 +1,7 @@
+
+[
+  { "id": "tech_1", "name": "Sarah Johnson", "specialties": ["Facial Treatment", "Makeup Application"], "is_available": true },
+  { "id": "tech_2", "name": "Maria Garcia", "specialties": ["Hair Styling", "Hair Cut & Style"], "is_available": true },
+  { "id": "tech_3", "name": "Ashley Chen", "specialties": ["Manicure", "Pedicure", "Eyebrow Threading"], "is_available": true },
+  { "id": "tech_4", "name": "Emily Rodriguez", "specialties": ["Facial Treatment", "Eyebrow Threading"], "is_available": true }
+]

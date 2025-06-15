@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+
+const API_BASE_URL = 'http://localhost:8080/api';
 
 interface Settings {
   service_prices: Record<string, number>;
@@ -20,26 +20,12 @@ export const useSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      // Use rpc call to fetch settings with type assertion
-      const { data, error } = await (supabase as any).rpc('get_settings');
-      
-      if (error) {
-        // Fallback to direct query with type assertion
-        const { data: fallbackData, error: fallbackError } = await (supabase as any)
-          .from('settings')
-          .select('key, value');
-        
-        if (fallbackError) throw fallbackError;
-        
-        const settingsMap: any = {};
-        fallbackData?.forEach((setting: any) => {
-          settingsMap[setting.key] = setting.value;
-        });
-        
-        setSettings(settingsMap);
-      } else {
-        setSettings(data);
+      const response = await fetch(`${API_BASE_URL}/settings`);
+      if (!response.ok) {
+        throw new Error('Backend not available');
       }
+      const data = await response.json();
+      setSettings(data);
     } catch (error) {
       console.error('Error fetching settings:', error);
       // Set default values if fetch fails
@@ -61,19 +47,15 @@ export const useSettings = () => {
 
   const updateSetting = async (key: string, value: any) => {
     try {
-      // Use type assertion to bypass TypeScript checking
-      const { data, error } = await (supabase as any)
-        .from('settings')
-        .update({ value })
-        .eq('key', key)
-        .select()
-        .single();
-      
-      if (error || !data) {
-        const { error: upsertError } = await (supabase as any)
-          .from('settings')
-          .upsert({ key, value });
-        if (upsertError) throw upsertError;
+      const response = await fetch(`${API_BASE_URL}/settings/${key}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update setting');
       }
       
       // Refresh settings
