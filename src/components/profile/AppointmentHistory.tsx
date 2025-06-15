@@ -21,7 +21,7 @@ const AppointmentHistory = () => {
   const { toast } = useToast();
   
   // Mock appointment data
-  const [appointments] = useState<Appointment[]>([
+  const [appointments, setAppointments] = useState<Appointment[]>([
     {
       id: "1",
       serviceName: "Hair Cut & Style",
@@ -45,16 +45,29 @@ const AppointmentHistory = () => {
   ]);
 
   const handleReschedule = (appointmentId: string) => {
+    // Here you would implement actual reschedule functionality
     toast({
-      title: "Reschedule Request",
-      description: "Please call us at (302) 456-7890 to reschedule your appointment.",
+      title: "Reschedule Requested",
+      description: "Your reschedule request has been submitted. We'll contact you shortly to confirm new timing.",
     });
+    
+    // Update appointment status or navigate to reschedule page
+    console.log('Rescheduling appointment:', appointmentId);
   };
 
   const handleCancel = (appointmentId: string) => {
+    // Here you would implement actual cancel functionality
+    setAppointments(prev => 
+      prev.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, status: "cancelled" as const }
+          : apt
+      )
+    );
+    
     toast({
-      title: "Cancellation Request",
-      description: "Please call us at (302) 456-7890 to cancel your appointment.",
+      title: "Appointment Cancelled",
+      description: "Your appointment has been successfully cancelled.",
     });
   };
 
@@ -121,6 +134,7 @@ const AppointmentHistory = () => {
                       onClick={() => handleReschedule(appointment.id)}
                       variant="outline"
                       size="sm"
+                      className="hover:bg-blue-50 hover:border-blue-300"
                     >
                       Reschedule
                     </Button>
@@ -128,7 +142,7 @@ const AppointmentHistory = () => {
                       onClick={() => handleCancel(appointment.id)}
                       variant="outline"
                       size="sm"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
                     >
                       Cancel
                     </Button>

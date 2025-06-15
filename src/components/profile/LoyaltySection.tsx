@@ -12,8 +12,9 @@ interface LoyaltySectionProps {
   onRedeemPoints: (points: number) => void;
 }
 
-const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
+const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) => {
   const [redeemAmount, setRedeemAmount] = useState("");
+  const [currentPoints, setCurrentPoints] = useState(points);
   const { toast } = useToast();
 
   const handleRedeem = () => {
@@ -37,10 +38,10 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
       return;
     }
 
-    if (amount > points) {
+    if (amount > currentPoints) {
       toast({
         title: "Insufficient Points",
-        description: `You only have ${points} points available.`,
+        description: `You only have ${currentPoints} points available.`,
         variant: "destructive",
       });
       return;
@@ -57,8 +58,13 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
 
     const dollarValue = (amount / 10).toFixed(2);
     
-    // Call the parent function to handle the actual redemption
-    onRedeemPoints(amount);
+    // Update points locally
+    setCurrentPoints(prev => prev - amount);
+    
+    // Call parent function if provided
+    if (onRedeemPoints) {
+      onRedeemPoints(amount);
+    }
     
     toast({
       title: "Points Redeemed!",
@@ -69,8 +75,8 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
   };
 
   const getNextRewardLevel = () => {
-    if (points < 500) return { level: "Bronze", needed: 500 - points, next: "Silver" };
-    if (points < 1000) return { level: "Silver", needed: 1000 - points, next: "Gold" };
+    if (currentPoints < 500) return { level: "Bronze", needed: 500 - currentPoints, next: "Silver" };
+    if (currentPoints < 1000) return { level: "Silver", needed: 1000 - currentPoints, next: "Gold" };
     return { level: "Gold", needed: 0, next: "VIP" };
   };
 
@@ -81,7 +87,7 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
     return !redeemAmount || 
            isNaN(amount) || 
            amount < 100 || 
-           amount > points;
+           amount > currentPoints;
   };
 
   return (
@@ -102,10 +108,10 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="text-center">
-          <div className="text-3xl font-bold text-pink-600">{points}</div>
+          <div className="text-3xl font-bold text-pink-600">{currentPoints}</div>
           <div className="text-sm text-gray-600">Available Points</div>
           <div className="text-xs text-gray-500 mt-1">
-            = ${(points / 10).toFixed(2)} in rewards
+            = ${(currentPoints / 10).toFixed(2)} in rewards
           </div>
         </div>
 
@@ -117,7 +123,7 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all"
-                style={{ width: `${((points % 500) / 500) * 100}%` }}
+                style={{ width: `${((currentPoints % 500) / 500) * 100}%` }}
               ></div>
             </div>
             <div className="text-xs text-gray-600 mt-2">
@@ -138,7 +144,7 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
               onChange={(e) => setRedeemAmount(e.target.value)}
               min="100"
               step="10"
-              max={points}
+              max={currentPoints}
             />
             <Button
               onClick={handleRedeem}
@@ -150,7 +156,7 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
               Redeem
             </Button>
           </div>
-          {redeemAmount && parseInt(redeemAmount) >= 100 && parseInt(redeemAmount) <= points && (
+          {redeemAmount && parseInt(redeemAmount) >= 100 && parseInt(redeemAmount) <= currentPoints && (
             <div className="text-sm text-green-600">
               = ${(parseInt(redeemAmount) / 10).toFixed(2)} credit
             </div>

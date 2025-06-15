@@ -226,7 +226,7 @@ export const useBookingFlow = () => {
 
   const isNextDisabled = () => {
     if (step === 1) return !selectedService;
-    if (step === 2) return !selectedTechnician || !serviceType;
+    if (step === 2) return !selectedTechnician;
     if (step === 3) return !selectedDate || !selectedTime;
     if (step === 4 && serviceType === "in-home") return otp !== "1234";
     return false;

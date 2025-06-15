@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, Star, Sparkles } from "lucide-react";
+import { Gift, Heart, Star, Sparkles, CreditCard, Smartphone } from "lucide-react";
+import { isValidEmail } from "@/components/auth/EmailValidation";
 
 const GiftCard = () => {
   const [selectedAmount, setSelectedAmount] = useState(0);
@@ -20,6 +21,14 @@ const GiftCard = () => {
     name: "",
     email: ""
   });
+  const [errors, setErrors] = useState({
+    recipientName: "",
+    recipientEmail: "",
+    buyerName: "",
+    buyerEmail: "",
+    amount: ""
+  });
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
   const { toast } = useToast();
 
@@ -28,50 +37,160 @@ const GiftCard = () => {
   const handleAmountSelect = (amount: number) => {
     setSelectedAmount(amount);
     setCustomAmount("");
+    setErrors(prev => ({ ...prev, amount: "" }));
   };
 
   const handleCustomAmount = (value: string) => {
     setCustomAmount(value);
     setSelectedAmount(0);
+    setErrors(prev => ({ ...prev, amount: "" }));
   };
 
   const getFinalAmount = () => {
     return customAmount ? parseFloat(customAmount) : selectedAmount;
   };
 
-  const handlePurchase = () => {
+  const validateForm = () => {
+    const newErrors = {
+      recipientName: "",
+      recipientEmail: "",
+      buyerName: "",
+      buyerEmail: "",
+      amount: ""
+    };
+
     const amount = getFinalAmount();
     
     if (!amount || amount < 25) {
+      newErrors.amount = "Gift card amount must be at least $25";
+    }
+
+    if (!recipientInfo.name.trim()) {
+      newErrors.recipientName = "Recipient name is required";
+    }
+
+    if (!recipientInfo.email.trim()) {
+      newErrors.recipientEmail = "Recipient email is required";
+    } else if (!isValidEmail(recipientInfo.email)) {
+      newErrors.recipientEmail = "Please enter a valid recipient email address";
+    }
+
+    if (!buyerInfo.name.trim()) {
+      newErrors.buyerName = "Your name is required";
+    }
+
+    if (!buyerInfo.email.trim()) {
+      newErrors.buyerEmail = "Your email is required";
+    } else if (!isValidEmail(buyerInfo.email)) {
+      newErrors.buyerEmail = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.values(newErrors).every(error => !error);
+  };
+
+  const handlePurchase = () => {
+    if (!validateForm()) {
       toast({
-        title: "Invalid Amount",
-        description: "Gift card amount must be at least $25.",
+        title: "Validation Error",
+        description: "Please fix the errors below before proceeding.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!recipientInfo.name || !recipientInfo.email || !buyerInfo.name || !buyerInfo.email) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
+    setShowPaymentOptions(true);
+  };
 
-    // Here you would integrate with Stripe or PayPal
+  const handlePaymentMethod = (method: string) => {
     toast({
-      title: "Purchase Successful!",
-      description: `Gift card for $${amount} has been sent to ${recipientInfo.email}`,
+      title: "Payment Processing",
+      description: `Redirecting to ${method} payment...`,
     });
 
-    // Reset form
-    setSelectedAmount(0);
-    setCustomAmount("");
-    setRecipientInfo({ name: "", email: "", message: "" });
-    setBuyerInfo({ name: "", email: "" });
+    // Here you would integrate with actual payment processors
+    // For now, simulate successful payment
+    setTimeout(() => {
+      toast({
+        title: "Purchase Successful!",
+        description: `Gift card for $${getFinalAmount()} has been sent to ${recipientInfo.email}`,
+      });
+
+      // Reset form
+      setSelectedAmount(0);
+      setCustomAmount("");
+      setRecipientInfo({ name: "", email: "", message: "" });
+      setBuyerInfo({ name: "", email: "" });
+      setShowPaymentOptions(false);
+      setErrors({
+        recipientName: "",
+        recipientEmail: "",
+        buyerName: "",
+        buyerEmail: "",
+        amount: ""
+      });
+    }, 2000);
   };
+
+  if (showPaymentOptions) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Choose Payment Method</CardTitle>
+              <CardDescription>
+                Complete your gift card purchase of ${getFinalAmount()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button
+                  onClick={() => handlePaymentMethod("Credit Card")}
+                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
+                  <CreditCard className="w-8 h-8" />
+                  <span>Credit Card</span>
+                </Button>
+                
+                <Button
+                  onClick={() => handlePaymentMethod("PayPal")}
+                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
+                >
+                  <Smartphone className="w-8 h-8" />
+                  <span>PayPal</span>
+                </Button>
+                
+                <Button
+                  onClick={() => handlePaymentMethod("Apple Pay")}
+                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black"
+                >
+                  <Smartphone className="w-8 h-8" />
+                  <span>Apple Pay</span>
+                </Button>
+                
+                <Button
+                  onClick={() => handlePaymentMethod("Google Pay")}
+                  className="h-20 flex-col space-y-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                >
+                  <Smartphone className="w-8 h-8" />
+                  <span>Google Pay</span>
+                </Button>
+              </div>
+              
+              <Button
+                onClick={() => setShowPaymentOptions(false)}
+                variant="outline"
+                className="w-full mt-4"
+              >
+                Back to Gift Card Details
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
@@ -183,7 +302,9 @@ const GiftCard = () => {
                     placeholder="Enter custom amount"
                     value={customAmount}
                     onChange={(e) => handleCustomAmount(e.target.value)}
+                    className={errors.amount ? "border-red-300" : ""}
                   />
+                  {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -202,7 +323,9 @@ const GiftCard = () => {
                     value={recipientInfo.name}
                     onChange={(e) => setRecipientInfo({...recipientInfo, name: e.target.value})}
                     placeholder="Enter recipient's name"
+                    className={errors.recipientName ? "border-red-300" : ""}
                   />
+                  {errors.recipientName && <p className="text-red-500 text-sm mt-1">{errors.recipientName}</p>}
                 </div>
                 
                 <div>
@@ -213,7 +336,9 @@ const GiftCard = () => {
                     value={recipientInfo.email}
                     onChange={(e) => setRecipientInfo({...recipientInfo, email: e.target.value})}
                     placeholder="Enter recipient's email"
+                    className={errors.recipientEmail ? "border-red-300" : ""}
                   />
+                  {errors.recipientEmail && <p className="text-red-500 text-sm mt-1">{errors.recipientEmail}</p>}
                 </div>
                 
                 <div>
@@ -243,7 +368,9 @@ const GiftCard = () => {
                     value={buyerInfo.name}
                     onChange={(e) => setBuyerInfo({...buyerInfo, name: e.target.value})}
                     placeholder="Enter your name"
+                    className={errors.buyerName ? "border-red-300" : ""}
                   />
+                  {errors.buyerName && <p className="text-red-500 text-sm mt-1">{errors.buyerName}</p>}
                 </div>
                 
                 <div>
@@ -254,7 +381,9 @@ const GiftCard = () => {
                     value={buyerInfo.email}
                     onChange={(e) => setBuyerInfo({...buyerInfo, email: e.target.value})}
                     placeholder="Enter your email"
+                    className={errors.buyerEmail ? "border-red-300" : ""}
                   />
+                  {errors.buyerEmail && <p className="text-red-500 text-sm mt-1">{errors.buyerEmail}</p>}
                 </div>
               </CardContent>
             </Card>

@@ -12,7 +12,7 @@ const ReferralSection = () => {
   const { toast } = useToast();
   const [referralEmail, setReferralEmail] = useState("");
   
-  const referralLink = `${window.location.origin}/register?ref=${user?.id}`;
+  const referralLink = `${window.location.origin}/register?ref=${user?.id || 'demo-user'}`;
 
   const copyReferralLink = async () => {
     try {
@@ -35,29 +35,40 @@ const ReferralSection = () => {
         textArea.select();
         
         try {
-          document.execCommand('copy');
+          const successful = document.execCommand('copy');
           textArea.remove();
-          toast({
-            title: "Link Copied!",
-            description: "Referral link has been copied to your clipboard.",
-          });
+          if (successful) {
+            toast({
+              title: "Link Copied!",
+              description: "Referral link has been copied to your clipboard.",
+            });
+          } else {
+            throw new Error('Copy command failed');
+          }
         } catch (err) {
           textArea.remove();
+          // Manual copy fallback
+          prompt("Copy this referral link:", referralLink);
           toast({
-            title: "Copy Failed",
-            description: "Unable to copy link. Please copy it manually.",
-            variant: "destructive",
+            title: "Copy Manually",
+            description: "Please copy the link from the dialog box.",
           });
         }
       }
     } catch (error) {
       console.error('Failed to copy text: ', error);
+      // Manual copy fallback
+      prompt("Copy this referral link:", referralLink);
       toast({
-        title: "Copy Failed",
-        description: "Unable to copy link. Please copy it manually.",
-        variant: "destructive",
+        title: "Copy Manually",
+        description: "Please copy the link from the dialog box.",
       });
     }
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const sendReferral = () => {
@@ -65,6 +76,15 @@ const ReferralSection = () => {
       toast({
         title: "Email Required",
         description: "Please enter an email address to send the referral.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isValidEmail(referralEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
         variant: "destructive",
       });
       return;
@@ -103,13 +123,13 @@ const ReferralSection = () => {
             <Input
               value={referralLink}
               readOnly
-              className="bg-gray-50"
+              className="bg-gray-50 flex-1"
             />
             <Button
               onClick={copyReferralLink}
               variant="outline"
               size="sm"
-              className="px-3"
+              className="px-3 hover:bg-gray-50"
               type="button"
             >
               <Copy className="w-4 h-4" />
