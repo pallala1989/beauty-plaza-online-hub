@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,11 +8,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, Clock, User, MapPin, Home, Phone } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { CalendarDays, Clock, User, MapPin, Home, Phone, CheckCircle } from "lucide-react";
+import emailjs from '@emailjs/browser';
+import { format } from "date-fns";
 
 const BookOnline = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState("");
   const [selectedTechnician, setSelectedTechnician] = useState("");
@@ -20,6 +28,12 @@ const BookOnline = () => {
   const [serviceType, setServiceType] = useState("in-store");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
@@ -38,38 +52,98 @@ const BookOnline = () => {
     }
   }, [location.state]);
 
-  const services = [
-    { id: "1", name: "Classic Facial", price: 75, duration: "60 min" },
-    { id: "2", name: "Anti-Aging Facial", price: 120, duration: "75 min" },
-    { id: "3", name: "Haircut & Style", price: 45, duration: "45 min" },
-    { id: "4", name: "Hair Color", price: 85, duration: "120 min" },
-    { id: "5", name: "Bridal Makeup", price: 150, duration: "90 min" },
-    { id: "6", name: "Special Event Makeup", price: 60, duration: "45 min" },
-    { id: "7", name: "Eyebrow Waxing", price: 25, duration: "20 min" },
-    { id: "8", name: "Full Leg Waxing", price: 65, duration: "45 min" },
-  ];
+  // Fetch services and technicians from Supabase
+  useEffect(() => {
+    fetchServices();
+    fetchTechnicians();
+  }, []);
 
-  const technicians = [
-    { id: "1", name: "Sarah Johnson", specialty: "Facial Specialist" },
-    { id: "2", name: "Emma Davis", specialty: "Hair Stylist" },
-    { id: "3", name: "Lisa Chen", specialty: "Makeup Artist" },
-    { id: "4", name: "Maria Rodriguez", specialty: "Waxing Specialist" },
-  ];
+  // Fetch booked slots when date/technician changes
+  useEffect(() => {
+    if (selectedDate && selectedTechnician) {
+      fetchBookedSlots();
+    }
+  }, [selectedDate, selectedTechnician]);
+
+  // Pre-fill user info if logged in
+  useEffect(() => {
+    if (user) {
+      setCustomerInfo(prev => ({
+        ...prev,
+        email: user.email || "",
+        name: user.user_metadata?.full_name || ""
+      }));
+    }
+  }, [user]);
+
+  const fetchServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
+  const fetchTechnicians = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('technicians')
+        .select('*')
+        .eq('is_available', true);
+      
+      if (error) throw error;
+      setTechnicians(data || []);
+    } catch (error) {
+      console.error('Error fetching technicians:', error);
+    }
+  };
+
+  const fetchBookedSlots = async () => {
+    if (!selectedDate || !selectedTechnician) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('appointment_time')
+        .eq('technician_id', selectedTechnician)
+        .eq('appointment_date', format(selectedDate, 'yyyy-MM-dd'))
+        .in('status', ['scheduled', 'confirmed']);
+      
+      if (error) throw error;
+      
+      const booked = data?.map(appointment => appointment.appointment_time) || [];
+      setBookedSlots(booked);
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+    }
+  };
 
   const timeSlots = [
-    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
-    "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
-    "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
   ];
 
   const handleNext = () => {
-    if (step < 5) {
+    // Skip step 4 for in-store appointments
+    if (step === 3 && serviceType === "in-store") {
+      setStep(5);
+    } else if (step < 5) {
       setStep(step + 1);
     }
   };
 
   const handleBack = () => {
-    if (step > 1) {
+    // Handle back navigation considering skipped step 4 for in-store
+    if (step === 5 && serviceType === "in-store") {
+      setStep(3);
+    } else if (step > 1) {
       setStep(step - 1);
     }
   };
@@ -108,12 +182,127 @@ const BookOnline = () => {
     }
   };
 
-  const handleSubmit = () => {
-    toast({
-      title: "Appointment Booked!",
-      description: "Your appointment has been confirmed. You'll receive a confirmation email with calendar invite shortly.",
-    });
+  const sendConfirmationEmail = async (appointmentData: any) => {
+    try {
+      // Initialize EmailJS
+      emailjs.init('UmpeYlneD0XdC7d7D');
 
+      const selectedServiceDetails = services.find(s => s.id === selectedService);
+      const selectedTechnicianDetails = technicians.find(t => t.id === selectedTechnician);
+
+      // Send email using EmailJS
+      await emailjs.send(
+        'service_e4fqv58',
+        'template_bvdipdh',
+        {
+          from_name: customerInfo.name,
+          from_email: customerInfo.email,
+          to_name: 'Beauty Plaza',
+          subject: 'New Appointment Booking',
+          message: `
+New appointment booking details:
+
+Service: ${selectedServiceDetails?.name}
+Technician: ${selectedTechnicianDetails?.name}
+Date: ${format(selectedDate!, 'MMMM dd, yyyy')}
+Time: ${selectedTime}
+Service Type: ${serviceType === 'in-home' ? 'In-Home' : 'In-Store'}
+Customer: ${customerInfo.name}
+Email: ${customerInfo.email}
+Phone: ${customerInfo.phone}
+${serviceType === 'in-home' ? `Address: ${customerInfo.address}` : ''}
+${customerInfo.notes ? `Notes: ${customerInfo.notes}` : ''}
+Total Amount: $${appointmentData.total_amount}
+          `
+        }
+      );
+
+      console.log('Confirmation email sent successfully');
+    } catch (error) {
+      console.error('Error sending confirmation email:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to book an appointment.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const selectedServiceDetails = services.find(s => s.id === selectedService);
+      const totalAmount = (selectedServiceDetails?.price || 0) + (serviceType === "in-home" ? 25 : 0);
+
+      const appointmentData = {
+        customer_id: user.id,
+        service_id: selectedService,
+        technician_id: selectedTechnician,
+        appointment_date: format(selectedDate!, 'yyyy-MM-dd'),
+        appointment_time: selectedTime,
+        service_type: serviceType,
+        notes: customerInfo.notes,
+        customer_phone: customerInfo.phone,
+        customer_email: customerInfo.email,
+        total_amount: totalAmount,
+        status: 'scheduled',
+        otp_verified: serviceType === 'in-home' ? true : false
+      };
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert([appointmentData])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Time Slot Unavailable",
+            description: "This time slot is already booked. Please select a different time.",
+            variant: "destructive",
+          });
+          setStep(3); // Go back to date/time selection
+          return;
+        }
+        throw error;
+      }
+
+      // Send confirmation email
+      await sendConfirmationEmail(appointmentData);
+
+      // Set booking details for confirmation dialog
+      setBookingDetails({
+        ...appointmentData,
+        service_name: selectedServiceDetails?.name,
+        technician_name: technicians.find(t => t.id === selectedTechnician)?.name,
+        formatted_date: format(selectedDate!, 'MMMM dd, yyyy'),
+        formatted_time: selectedTime
+      });
+
+      setShowConfirmation(true);
+
+    } catch (error: any) {
+      console.error('Error creating appointment:', error);
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Failed to create appointment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmationClose = () => {
+    setShowConfirmation(false);
+    
     // Reset form
     setStep(1);
     setSelectedService("");
@@ -124,15 +313,27 @@ const BookOnline = () => {
     setOtp("");
     setOtpSent(false);
     setCustomerInfo({
-      name: "",
-      email: "",
+      name: user?.user_metadata?.full_name || "",
+      email: user?.email || "",
       phone: "",
       address: "",
       notes: ""
     });
+    
+    // Navigate to home
+    navigate("/");
   };
 
   const selectedServiceDetails = services.find(s => s.id === selectedService);
+  const maxStep = serviceType === "in-store" ? 4 : 5; // Adjust max step based on service type
+
+  const getStepTitle = () => {
+    if (step === 1) return "Step 1: Select Service";
+    if (step === 2) return "Step 2: Choose Technician & Type";
+    if (step === 3) return "Step 3: Pick Date & Time";
+    if (step === 4 && serviceType === "in-home") return "Step 4: Verify Phone";
+    return `Step ${serviceType === "in-store" ? 4 : 5}: Your Information`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -150,7 +351,7 @@ const BookOnline = () => {
         {/* Progress Indicator */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4, 5].map((stepNumber) => (
+            {Array.from({ length: maxStep }, (_, i) => i + 1).map((stepNumber) => (
               <div key={stepNumber} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -161,7 +362,7 @@ const BookOnline = () => {
                 >
                   {stepNumber}
                 </div>
-                {stepNumber < 5 && (
+                {stepNumber < maxStep && (
                   <div
                     className={`w-16 h-1 mx-2 ${
                       step > stepNumber ? "bg-gradient-to-r from-pink-500 to-purple-600" : "bg-gray-200"
@@ -176,11 +377,11 @@ const BookOnline = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center">
-              {step === 1 && <><User className="mr-2" /> Step 1: Select Service</>}
-              {step === 2 && <><User className="mr-2" /> Step 2: Choose Technician & Type</>}
-              {step === 3 && <><CalendarDays className="mr-2" /> Step 3: Pick Date & Time</>}
-              {step === 4 && <><Phone className="mr-2" /> Step 4: Verify Phone (In-Home Only)</>}
-              {step === 5 && <><MapPin className="mr-2" /> Step 5: Your Information</>}
+              {step === 1 && <><User className="mr-2" /> {getStepTitle()}</>}
+              {step === 2 && <><User className="mr-2" /> {getStepTitle()}</>}
+              {step === 3 && <><CalendarDays className="mr-2" /> {getStepTitle()}</>}
+              {step === 4 && serviceType === "in-home" && <><Phone className="mr-2" /> {getStepTitle()}</>}
+              {((step === 4 && serviceType === "in-store") || (step === 5)) && <><MapPin className="mr-2" /> {getStepTitle()}</>}
             </CardTitle>
           </CardHeader>
 
@@ -204,7 +405,7 @@ const BookOnline = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold">{service.name}</h3>
-                            <p className="text-sm text-gray-500">{service.duration}</p>
+                            <p className="text-sm text-gray-500">{service.duration} min</p>
                           </div>
                           <div className="text-right">
                             <div className="font-bold text-pink-600">${service.price}</div>
@@ -235,7 +436,9 @@ const BookOnline = () => {
                       >
                         <CardContent className="p-4">
                           <h3 className="font-semibold">{tech.name}</h3>
-                          <p className="text-sm text-gray-500">{tech.specialty}</p>
+                          <p className="text-sm text-gray-500">
+                            {tech.specialties?.join(", ") || "Beauty Specialist"}
+                          </p>
                         </CardContent>
                       </Card>
                     ))}
@@ -284,20 +487,27 @@ const BookOnline = () => {
                   <div>
                     <Label>Select time:</Label>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
-                      {timeSlots.map((time) => (
-                        <Button
-                          key={time}
-                          variant={selectedTime === time ? "default" : "outline"}
-                          className={`text-sm ${
-                            selectedTime === time
-                              ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                              : "border-pink-200 text-pink-600 hover:bg-pink-50"
-                          }`}
-                          onClick={() => setSelectedTime(time)}
-                        >
-                          {time}
-                        </Button>
-                      ))}
+                      {timeSlots.map((time) => {
+                        const isBooked = bookedSlots.includes(time);
+                        return (
+                          <Button
+                            key={time}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            disabled={isBooked}
+                            className={`text-sm ${
+                              selectedTime === time
+                                ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                                : isBooked
+                                ? "opacity-50 cursor-not-allowed"
+                                : "border-pink-200 text-pink-600 hover:bg-pink-50"
+                            }`}
+                            onClick={() => !isBooked && setSelectedTime(time)}
+                          >
+                            {time}
+                            {isBooked && " (Booked)"}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -361,8 +571,8 @@ const BookOnline = () => {
               </div>
             )}
 
-            {/* Step 5: Customer Information */}
-            {step === 5 && (
+            {/* Step 5 (or 4 for in-store): Customer Information */}
+            {((step === 4 && serviceType === "in-store") || (step === 5)) && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -389,7 +599,7 @@ const BookOnline = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="phone">
-                      Phone Number {serviceType === "in-home" && "*"}
+                      Phone Number {serviceType === "in-home" ? "*" : ""}
                     </Label>
                     <Input
                       id="phone"
@@ -468,7 +678,7 @@ const BookOnline = () => {
             Back
           </Button>
           
-          {step < 5 ? (
+          {((step < 4 && serviceType === "in-store") || (step < 5 && serviceType === "in-home")) ? (
             <Button
               onClick={handleNext}
               disabled={
@@ -479,18 +689,58 @@ const BookOnline = () => {
               }
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
             >
-              {step === 4 && serviceType === "in-store" ? "Skip" : "Next"}
+              Next
             </Button>
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={!customerInfo.name || !customerInfo.email}
+              disabled={!customerInfo.name || !customerInfo.email || isLoading}
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
             >
-              Confirm Booking
+              {isLoading ? "Booking..." : "Confirm Booking"}
             </Button>
           )}
         </div>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center justify-center mb-4">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+              </div>
+              <AlertDialogTitle className="text-center text-2xl">
+                Booking Confirmed!
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-center space-y-2">
+                <p className="text-lg font-semibold text-gray-900">
+                  {bookingDetails?.service_name}
+                </p>
+                <p>with {bookingDetails?.technician_name}</p>
+                <p className="font-medium">
+                  {bookingDetails?.formatted_date} at {bookingDetails?.formatted_time}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Service Type: {bookingDetails?.service_type === 'in-home' ? 'In-Home' : 'In-Store'}
+                </p>
+                <p className="text-lg font-bold text-pink-600">
+                  Total: ${bookingDetails?.total_amount}
+                </p>
+                <p className="text-sm text-gray-500 mt-4">
+                  A confirmation email has been sent to {bookingDetails?.customer_email}
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <Button 
+                onClick={handleConfirmationClose}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+              >
+                Close
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
