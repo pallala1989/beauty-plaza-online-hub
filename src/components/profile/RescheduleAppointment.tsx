@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -173,7 +172,7 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="hover:bg-blue-50 hover:border-blue-300"
+          className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
         >
           Reschedule
         </Button>
@@ -239,8 +238,8 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
                       variant={selectedTechnicianId === technician.id ? "default" : "outline"}
                       className={`justify-start ${
                         selectedTechnicianId === technician.id
-                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                          : "border-pink-200 text-pink-600 hover:bg-pink-50"
+                          ? "bg-green-500 text-white hover:bg-green-600"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedTechnicianId(technician.id)}
                     >
@@ -267,24 +266,29 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
                           disabled={isBooked}
                           className={`text-sm ${
                             isSelected
-                              ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                              ? "bg-green-500 text-white hover:bg-green-600"
                               : isBooked
-                              ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
-                              : "border-pink-200 text-pink-600 hover:bg-pink-50"
+                              ? "bg-red-100 text-red-500 border-red-200 cursor-not-allowed opacity-50"
+                              : "bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:border-green-300 hover:text-green-700"
                           }`}
                           onClick={() => !isBooked && setSelectedTime(time)}
                         >
-                          {time}
-                          {isBooked && " (Booked)"}
+                          {formatTime(time)}
+                          {isBooked && " (Unavailable)"}
                         </Button>
                       );
                     })}
                   </div>
-                  {bookedSlots.length > 0 && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Unavailable times are marked as "Booked"
-                    </p>
-                  )}
+                  <div className="flex items-center gap-4 mt-3 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span>Available</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                      <span>Unavailable</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -325,7 +329,7 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
             <Button
               onClick={handleReschedule}
               disabled={!selectedDate || !selectedTime || !selectedTechnicianId || isLoading}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+              className="bg-green-500 text-white hover:bg-green-600"
             >
               {isLoading ? "Rescheduling..." : "Confirm Reschedule"}
             </Button>

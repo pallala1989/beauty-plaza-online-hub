@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Heart, Gift, Settings } from "lucide-react";
 import AppointmentHistory from "@/components/profile/AppointmentHistory";
+import LoyaltySection from "@/components/profile/LoyaltySection";
+import ReferralSection from "@/components/profile/ReferralSection";
+import { isValidEmail } from "@/components/auth/EmailValidation";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -22,24 +26,37 @@ const Profile = () => {
     birthday: "1990-05-15"
   });
 
-  const loyaltyInfo = {
-    points: 850,
-    tier: "Silver",
-    nextTier: "Gold",
-    pointsToNext: 150
+  const [emailError, setEmailError] = useState("");
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setUserInfo({...userInfo, email});
+    
+    if (email && !isValidEmail(email)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError("");
+    }
   };
 
-  const referrals = [
-    { name: "Emma Wilson", date: "2024-01-15", status: "Completed", earned: 10 },
-    { name: "Lisa Davis", date: "2024-01-02", status: "Completed", earned: 10 },
-    { name: "Maria Garcia", date: "2023-12-20", status: "Pending", earned: 0 }
-  ];
-
   const handleUpdateProfile = () => {
+    if (!isValidEmail(userInfo.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Profile Updated!",
       description: "Your profile information has been successfully updated.",
     });
+  };
+
+  const handleRedeemPoints = (points: number) => {
+    console.log(`Redeemed ${points} points`);
   };
 
   return (
@@ -107,8 +124,12 @@ const Profile = () => {
                       id="email"
                       type="email"
                       value={userInfo.email}
-                      onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
+                      onChange={handleEmailChange}
+                      className={emailError ? "border-red-500" : ""}
                     />
+                    {emailError && (
+                      <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
@@ -142,7 +163,8 @@ const Profile = () => {
 
                 <Button
                   onClick={handleUpdateProfile}
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+                  disabled={!!emailError}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50"
                 >
                   Update Profile
                 </Button>
@@ -191,108 +213,12 @@ const Profile = () => {
 
           {/* Loyalty Tab */}
           <TabsContent value="loyalty" className="space-y-6">
-            <Card className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-              <CardHeader>
-                <CardTitle>Loyalty Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold">{loyaltyInfo.points}</div>
-                    <div className="text-sm opacity-90">Total Points</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{loyaltyInfo.tier}</div>
-                    <div className="text-sm opacity-90">Current Tier</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{loyaltyInfo.pointsToNext}</div>
-                    <div className="text-sm opacity-90">To {loyaltyInfo.nextTier}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Available Rewards</CardTitle>
-                <CardDescription>Redeem your points for exclusive benefits</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
-                    <div>
-                      <div className="font-semibold">$10 off next service</div>
-                      <div className="text-sm text-gray-600">200 points</div>
-                    </div>
-                    <Button size="sm" className="bg-pink-500 hover:bg-pink-600">Redeem</Button>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
-                    <div>
-                      <div className="font-semibold">Free eyebrow waxing</div>
-                      <div className="text-sm text-gray-600">600 points</div>
-                    </div>
-                    <Button size="sm" className="bg-pink-500 hover:bg-pink-600">Redeem</Button>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
-                    <div>
-                      <div className="font-semibold">Free classic facial</div>
-                      <div className="text-sm text-gray-600">800 points</div>
-                    </div>
-                    <Button size="sm" className="bg-pink-500 hover:bg-pink-600">Redeem</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <LoyaltySection points={850} onRedeemPoints={handleRedeemPoints} />
           </TabsContent>
 
           {/* Referrals Tab */}
           <TabsContent value="referrals" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Referral Link</CardTitle>
-                <CardDescription>Share with friends and earn $10 for each successful referral</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    value="https://beautyplaza.com/register?ref=SARAH123"
-                    readOnly
-                    className="flex-1"
-                  />
-                  <Button className="bg-pink-500 hover:bg-pink-600">Copy</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Referral History</CardTitle>
-                <CardDescription>Track your referrals and earnings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {referrals.map((referral, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <div className="font-semibold">{referral.name}</div>
-                        <div className="text-sm text-gray-600">{referral.date}</div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={referral.status === "Completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                          {referral.status}
-                        </Badge>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {referral.earned > 0 ? `+$${referral.earned}` : "Pending"}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <ReferralSection />
           </TabsContent>
         </Tabs>
       </div>
