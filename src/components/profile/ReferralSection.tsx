@@ -6,14 +6,22 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Share2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/useSettings";
 
 const ReferralSection = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [referralEmail, setReferralEmail] = useState("");
   const [isCopying, setIsCopying] = useState(false);
+  const { settings, isLoading } = useSettings();
   
   const referralLink = `${window.location.origin}/register?ref=${user?.id || 'demo-user'}`;
+  
+  // Get referral amounts from settings with defaults
+  const referralAmounts = settings?.referral_amounts || {
+    referrer_credit: 10,
+    referred_discount: 10
+  };
 
   const copyReferralLink = async () => {
     setIsCopying(true);
@@ -94,7 +102,7 @@ const ReferralSection = () => {
     }
 
     const subject = "Join Beauty Plaza - Special Offer Inside!";
-    const body = `Hi there!\n\nI wanted to share Beauty Plaza with you. They offer amazing beauty services and you'll get $10 off your first appointment when you sign up using my referral link:\n\n${referralLink}\n\nCheck them out - you won't be disappointed!\n\nBest regards`;
+    const body = `Hi there!\n\nI wanted to share Beauty Plaza with you. They offer amazing beauty services and you'll get $${referralAmounts.referred_discount} off your first appointment when you sign up using my referral link:\n\n${referralLink}\n\nCheck them out - you won't be disappointed!\n\nBest regards`;
     
     const mailtoLink = `mailto:${referralEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
@@ -107,6 +115,16 @@ const ReferralSection = () => {
     setReferralEmail("");
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading referral settings...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -115,7 +133,7 @@ const ReferralSection = () => {
           Refer Friends
         </CardTitle>
         <CardDescription>
-          Share Beauty Plaza with friends and earn $10 credit for each successful referral!
+          Share Beauty Plaza with friends and earn ${referralAmounts.referrer_credit} credit for each successful referral!
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -168,8 +186,8 @@ const ReferralSection = () => {
           <p className="font-semibold text-pink-800 mb-1">How it works:</p>
           <ul className="space-y-1">
             <li>• Share your referral link with friends</li>
-            <li>• They get $10 off their first appointment</li>
-            <li>• You earn $10 credit when they book</li>
+            <li>• They get ${referralAmounts.referred_discount} off their first appointment</li>
+            <li>• You earn ${referralAmounts.referrer_credit} credit when they book</li>
           </ul>
         </div>
       </CardContent>

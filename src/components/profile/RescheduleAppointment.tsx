@@ -70,25 +70,52 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
   };
 
   const fetchBookedSlots = async (date: Date, technicianId: string) => {
-    if (!date || !technicianId) return;
+    if (!date || !technicianId) {
+      setBookedSlots([]);
+      return;
+    }
 
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
+      console.log('Fetching booked slots for:', { date: formattedDate, technicianId, excludeAppointment: appointmentId });
+      
       const { data, error } = await supabase
         .from('appointments')
         .select('appointment_time')
         .eq('technician_id', technicianId)
         .eq('appointment_date', formattedDate)
         .in('status', ['scheduled', 'confirmed'])
-        .neq('id', appointmentId);
+        .neq('id', appointmentId); // Exclude current appointment
       
       if (error) throw error;
       
       const booked = data?.map(appointment => appointment.appointment_time) || [];
+      console.log('Booked slots found:', booked);
       setBookedSlots(booked);
     } catch (error) {
       console.error('Error fetching booked slots:', error);
       setBookedSlots([]);
+    }
+  };
+
+  const validateSlotAvailability = async (date: Date, time: string, technicianId: string): Promise<boolean> => {
+    try {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('technician_id', technicianId)
+        .eq('appointment_date', formattedDate)
+        .eq('appointment_time', time)
+        .in('status', ['scheduled', 'confirmed'])
+        .neq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      return !data || data.length === 0;
+    } catch (error) {
+      console.error('Error validating slot availability:', error);
+      return false;
     }
   };
 
@@ -99,6 +126,19 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
         description: "Please select a date, time, and technician.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Final availability check before confirming
+    const isAvailable = await validateSlotAvailability(selectedDate, selectedTime, selectedTechnicianId);
+    if (!isAvailable) {
+      toast({
+        title: "Slot No Longer Available",
+        description: "This time slot has been booked by someone else. Please select a different time.",
+        variant: "destructive",
+      });
+      // Refresh booked slots
+      await fetchBookedSlots(selectedDate, selectedTechnicianId);
       return;
     }
 
@@ -116,7 +156,18 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
         })
         .eq('id', appointmentId);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Time Slot Unavailable",
+            description: "This time slot is already booked. Please select a different time.",
+            variant: "destructive",
+          });
+          await fetchBookedSlots(selectedDate, selectedTechnicianId);
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Appointment Rescheduled",
@@ -147,6 +198,11 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
     if (selectedDate && selectedTechnicianId) {
       fetchBookedSlots(selectedDate, selectedTechnicianId);
     }
+  }, [selectedDate, selectedTechnicianId]);
+
+  // Clear selected time when technician or date changes
+  useEffect(() => {
+    setSelectedTime("");
   }, [selectedDate, selectedTechnicianId]);
 
   return (

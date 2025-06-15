@@ -1,11 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Gift, Star } from "lucide-react";
+import { useSettings } from "@/hooks/useSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LoyaltySectionProps {
   points: number;
@@ -17,6 +20,25 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   const [currentPoints, setCurrentPoints] = useState(points);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const { toast } = useToast();
+  const { settings, isLoading: settingsLoading } = useSettings();
+  const { user } = useAuth();
+
+  // Get settings with defaults
+  const loyaltySettings = settings?.loyalty_settings || { 
+    points_per_dollar: 10, 
+    min_redemption: 100, 
+    redemption_rate: 10 
+  };
+  const loyaltyTiers = settings?.loyalty_tiers || { 
+    bronze: 0, 
+    silver: 500, 
+    gold: 1000, 
+    platinum: 2000 
+  };
+
+  useEffect(() => {
+    setCurrentPoints(points);
+  }, [points]);
 
   const handleRedeem = async () => {
     const amount = parseInt(redeemAmount);
@@ -48,10 +70,10 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
       return;
     }
 
-    if (amount < 100) {
+    if (amount < loyaltySettings.min_redemption) {
       toast({
         title: "Minimum Required",
-        description: "Minimum redemption is 100 points ($10).",
+        description: `Minimum redemption is ${loyaltySettings.min_redemption} points ($${(loyaltySettings.min_redemption / loyaltySettings.redemption_rate).toFixed(2)}).`,
         variant: "destructive",
       });
       return;
@@ -60,13 +82,37 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
     setIsRedeeming(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Update loyalty points in database
+      const { data: loyaltyData, error: fetchError } = await supabase
+        .from('loyalty_points')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newPoints = loyaltyData.points - amount;
+      const newTotalRedeemed = loyaltyData.total_redeemed + amount;
+
+      const { error: updateError } = await supabase
+        .from('loyalty_points')
+        .update({
+          points: newPoints,
+          total_redeemed: newTotalRedeemed,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      const dollarValue = (amount / loyaltySettings.redemption_rate).toFixed(2);
       
-      const dollarValue = (amount / 10).toFixed(2);
-      
-      // Update points locally
-      setCurrentPoints(prev => prev - amount);
+      // Update local state
+      setCurrentPoints(newPoints);
       
       // Call parent function if provided
       if (onRedeemPoints) {
@@ -79,10 +125,11 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
       });
       
       setRedeemAmount("");
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error redeeming points:', error);
       toast({
         title: "Redemption Failed",
-        description: "Failed to redeem points. Please try again.",
+        description: error.message || "Failed to redeem points. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -91,9 +138,23 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   };
 
   const getNextRewardLevel = () => {
-    if (currentPoints < 500) return { level: "Bronze", needed: 500 - currentPoints, next: "Silver" };
-    if (currentPoints < 1000) return { level: "Silver", needed: 1000 - currentPoints, next: "Gold" };
-    return { level: "Gold", needed: 0, next: "VIP" };
+    const tiers = Object.entries(loyaltyTiers).sort(([,a], [,b]) => a - b);
+    
+    for (let i = 0; i < tiers.length; i++) {
+      const [tierName, threshold] = tiers[i];
+      if (currentPoints < threshold) {
+        const prevTier = i > 0 ? tiers[i-1] : null;
+        return { 
+          level: prevTier ? prevTier[0] : "Bronze", 
+          needed: threshold - currentPoints, 
+          next: tierName 
+        };
+      }
+    }
+    
+    // User has reached highest tier
+    const highestTier = tiers[tiers.length - 1];
+    return { level: highestTier[0], needed: 0, next: "VIP" };
   };
 
   const rewardInfo = getNextRewardLevel();
@@ -102,10 +163,21 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
     const amount = parseInt(redeemAmount);
     return !redeemAmount || 
            isNaN(amount) || 
-           amount < 100 || 
+           amount < loyaltySettings.min_redemption || 
            amount > currentPoints ||
-           isRedeeming;
+           isRedeeming ||
+           settingsLoading;
   };
+
+  if (settingsLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading loyalty settings...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -128,7 +200,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
           <div className="text-3xl font-bold text-pink-600">{currentPoints}</div>
           <div className="text-sm text-gray-600">Available Points</div>
           <div className="text-xs text-gray-500 mt-1">
-            = ${(currentPoints / 10).toFixed(2)} in rewards
+            = ${(currentPoints / loyaltySettings.redemption_rate).toFixed(2)} in rewards
           </div>
         </div>
 
@@ -151,7 +223,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
 
         <div className="space-y-3">
           <label className="text-sm font-medium text-gray-700">
-            Redeem Points (100 points minimum = $10)
+            Redeem Points ({loyaltySettings.min_redemption} points minimum = ${(loyaltySettings.min_redemption / loyaltySettings.redemption_rate).toFixed(2)})
           </label>
           <div className="flex space-x-2">
             <Input
@@ -159,7 +231,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
               placeholder="Enter points"
               value={redeemAmount}
               onChange={(e) => setRedeemAmount(e.target.value)}
-              min="100"
+              min={loyaltySettings.min_redemption}
               step="10"
               max={currentPoints}
               disabled={isRedeeming}
@@ -174,9 +246,9 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
               {isRedeeming ? "Redeeming..." : "Redeem"}
             </Button>
           </div>
-          {redeemAmount && parseInt(redeemAmount) >= 100 && parseInt(redeemAmount) <= currentPoints && (
+          {redeemAmount && parseInt(redeemAmount) >= loyaltySettings.min_redemption && parseInt(redeemAmount) <= currentPoints && (
             <div className="text-sm text-green-600">
-              = ${(parseInt(redeemAmount) / 10).toFixed(2)} credit
+              = ${(parseInt(redeemAmount) / loyaltySettings.redemption_rate).toFixed(2)} credit
             </div>
           )}
         </div>
@@ -184,7 +256,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
           <p className="font-semibold mb-1">How to earn points:</p>
           <ul className="space-y-1">
-            <li>• 10 points for every $1 spent</li>
+            <li>• {loyaltySettings.points_per_dollar} points for every $1 spent</li>
             <li>• 100 bonus points for new account</li>
             <li>• 50 points for each referral</li>
             <li>• 25 points for social media shares</li>
