@@ -30,6 +30,16 @@ const TechnicianAndTypeSelection: React.FC<TechnicianAndTypeSelectionProps> = ({
   console.log('TechnicianAndTypeSelection - serviceType:', serviceType);
   console.log('TechnicianAndTypeSelection - technicians:', technicians);
 
+  const handleTechnicianClick = (techId: string) => {
+    console.log('Technician clicked:', techId);
+    onTechnicianSelect(techId);
+  };
+
+  const handleServiceTypeChange = (value: string) => {
+    console.log('Service type changed:', value);
+    onServiceTypeChange(value);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -43,7 +53,7 @@ const TechnicianAndTypeSelection: React.FC<TechnicianAndTypeSelectionProps> = ({
                   ? "ring-2 ring-pink-500 bg-pink-50 border-pink-200"
                   : "border-gray-200 hover:border-pink-300"
               }`}
-              onClick={() => onTechnicianSelect(tech.id)}
+              onClick={() => handleTechnicianClick(tech.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
@@ -71,7 +81,7 @@ const TechnicianAndTypeSelection: React.FC<TechnicianAndTypeSelectionProps> = ({
 
       <div>
         <Label className="text-lg font-semibold mb-4 block">Service type:</Label>
-        <RadioGroup value={serviceType} onValueChange={onServiceTypeChange} className="space-y-3">
+        <RadioGroup value={serviceType} onValueChange={handleServiceTypeChange} className="space-y-3">
           <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all ${
             serviceType === "in-store" 
               ? "ring-2 ring-pink-500 bg-pink-50 border-pink-200" 

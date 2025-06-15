@@ -17,34 +17,54 @@ const GiftCardForm = () => {
     message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({
+    amount: "",
+    recipientName: "",
+    recipientEmail: "",
+    buyerEmail: ""
+  });
 
   const { toast } = useToast();
+
+  const validateForm = () => {
+    const newErrors = {
+      amount: "",
+      recipientName: "",
+      recipientEmail: "",
+      buyerEmail: ""
+    };
+
+    if (!formData.amount || parseFloat(formData.amount) < 25) {
+      newErrors.amount = "Minimum amount is $25";
+    }
+
+    if (!formData.recipientName.trim()) {
+      newErrors.recipientName = "Recipient name is required";
+    }
+
+    if (!formData.recipientEmail.trim()) {
+      newErrors.recipientEmail = "Recipient email is required";
+    } else if (!isValidEmail(formData.recipientEmail)) {
+      newErrors.recipientEmail = "Please enter a valid recipient email address";
+    }
+
+    if (!formData.buyerEmail.trim()) {
+      newErrors.buyerEmail = "Your email is required";
+    } else if (!isValidEmail(formData.buyerEmail)) {
+      newErrors.buyerEmail = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.values(newErrors).every(error => !error);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.amount || !formData.recipientName || !formData.recipientEmail || !formData.buyerEmail) {
+    if (!validateForm()) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isValidEmail(formData.recipientEmail)) {
-      toast({
-        title: "Invalid Recipient Email",
-        description: "Please enter a valid recipient email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isValidEmail(formData.buyerEmail)) {
-      toast({
-        title: "Invalid Buyer Email",
-        description: "Please enter a valid buyer email address.",
+        title: "Validation Error",
+        description: "Please fix the errors below before submitting.",
         variant: "destructive",
       });
       return;
@@ -69,6 +89,12 @@ const GiftCardForm = () => {
         buyerEmail: "",
         message: ""
       });
+      setErrors({
+        amount: "",
+        recipientName: "",
+        recipientEmail: "",
+        buyerEmail: ""
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -81,10 +107,19 @@ const GiftCardForm = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   return (
@@ -107,9 +142,10 @@ const GiftCardForm = () => {
               step="5"
               value={formData.amount}
               onChange={handleChange}
-              required
               placeholder="Enter amount (minimum $25)"
+              className={errors.amount ? "border-red-300" : ""}
             />
+            {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,9 +156,10 @@ const GiftCardForm = () => {
                 name="recipientName"
                 value={formData.recipientName}
                 onChange={handleChange}
-                required
                 placeholder="Who is this for?"
+                className={errors.recipientName ? "border-red-300" : ""}
               />
+              {errors.recipientName && <p className="text-red-500 text-sm mt-1">{errors.recipientName}</p>}
             </div>
             <div>
               <Label htmlFor="recipientEmail">Recipient Email *</Label>
@@ -132,13 +169,10 @@ const GiftCardForm = () => {
                 type="email"
                 value={formData.recipientEmail}
                 onChange={handleChange}
-                required
                 placeholder="recipient@example.com"
-                className={!isValidEmail(formData.recipientEmail) && formData.recipientEmail ? "border-red-300" : ""}
+                className={errors.recipientEmail ? "border-red-300" : ""}
               />
-              {!isValidEmail(formData.recipientEmail) && formData.recipientEmail && (
-                <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>
-              )}
+              {errors.recipientEmail && <p className="text-red-500 text-sm mt-1">{errors.recipientEmail}</p>}
             </div>
           </div>
 
@@ -150,13 +184,10 @@ const GiftCardForm = () => {
               type="email"
               value={formData.buyerEmail}
               onChange={handleChange}
-              required
               placeholder="your.email@example.com"
-              className={!isValidEmail(formData.buyerEmail) && formData.buyerEmail ? "border-red-300" : ""}
+              className={errors.buyerEmail ? "border-red-300" : ""}
             />
-            {!isValidEmail(formData.buyerEmail) && formData.buyerEmail && (
-              <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>
-            )}
+            {errors.buyerEmail && <p className="text-red-500 text-sm mt-1">{errors.buyerEmail}</p>}
           </div>
 
           <div>

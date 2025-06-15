@@ -260,6 +260,8 @@ const BookOnline = () => {
   // Check if next button should be enabled
   const isNextDisabled = () => {
     console.log('Checking if next is disabled for step:', step);
+    console.log('Current values:', { selectedService, selectedTechnician, serviceType, selectedDate, selectedTime });
+    
     if (step === 1) {
       const disabled = !selectedService;
       console.log('Step 1 - selectedService:', selectedService, 'disabled:', disabled);
@@ -281,6 +283,16 @@ const BookOnline = () => {
       return disabled;
     }
     return false;
+  };
+
+  const handleTechnicianSelect = (technicianId: string) => {
+    console.log('Technician selected in parent:', technicianId);
+    setSelectedTechnician(technicianId);
+  };
+
+  const handleServiceTypeChange = (newServiceType: string) => {
+    console.log('Service type changed in parent:', newServiceType);
+    setServiceType(newServiceType);
   };
 
   return (
@@ -326,8 +338,8 @@ const BookOnline = () => {
                 technicians={technicians}
                 selectedTechnician={selectedTechnician}
                 serviceType={serviceType}
-                onTechnicianSelect={setSelectedTechnician}
-                onServiceTypeChange={setServiceType}
+                onTechnicianSelect={handleTechnicianSelect}
+                onServiceTypeChange={handleServiceTypeChange}
               />
             )}
 

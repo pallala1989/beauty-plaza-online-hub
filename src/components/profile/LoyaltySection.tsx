@@ -19,10 +19,19 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
   const handleRedeem = () => {
     const amount = parseInt(redeemAmount);
     
-    if (!amount || amount <= 0) {
+    if (!redeemAmount || isNaN(amount)) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid number of points to redeem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a positive number of points.",
         variant: "destructive",
       });
       return;
@@ -48,6 +57,7 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
 
     const dollarValue = (amount / 10).toFixed(2);
     
+    // Call the parent function to handle the actual redemption
     onRedeemPoints(amount);
     
     toast({
@@ -65,6 +75,14 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
   };
 
   const rewardInfo = getNextRewardLevel();
+
+  const isRedeemDisabled = () => {
+    const amount = parseInt(redeemAmount);
+    return !redeemAmount || 
+           isNaN(amount) || 
+           amount < 100 || 
+           amount > points;
+  };
 
   return (
     <Card>
@@ -120,17 +138,19 @@ const LoyaltySection = ({ points, onRedeemPoints }: LoyaltySectionProps) => {
               onChange={(e) => setRedeemAmount(e.target.value)}
               min="100"
               step="10"
+              max={points}
             />
             <Button
               onClick={handleRedeem}
-              disabled={!redeemAmount || parseInt(redeemAmount) < 100 || parseInt(redeemAmount) > points}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+              disabled={isRedeemDisabled()}
+              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
             >
               <Gift className="w-4 h-4 mr-2" />
               Redeem
             </Button>
           </div>
-          {redeemAmount && parseInt(redeemAmount) >= 100 && (
+          {redeemAmount && parseInt(redeemAmount) >= 100 && parseInt(redeemAmount) <= points && (
             <div className="text-sm text-green-600">
               = ${(parseInt(redeemAmount) / 10).toFixed(2)} credit
             </div>

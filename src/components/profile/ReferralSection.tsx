@@ -16,12 +16,42 @@ const ReferralSection = () => {
 
   const copyReferralLink = async () => {
     try {
-      await navigator.clipboard.writeText(referralLink);
-      toast({
-        title: "Link Copied!",
-        description: "Referral link has been copied to your clipboard.",
-      });
+      // Use the Clipboard API if available
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(referralLink);
+        toast({
+          title: "Link Copied!",
+          description: "Referral link has been copied to your clipboard.",
+        });
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = referralLink;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          textArea.remove();
+          toast({
+            title: "Link Copied!",
+            description: "Referral link has been copied to your clipboard.",
+          });
+        } catch (err) {
+          textArea.remove();
+          toast({
+            title: "Copy Failed",
+            description: "Unable to copy link. Please copy it manually.",
+            variant: "destructive",
+          });
+        }
+      }
     } catch (error) {
+      console.error('Failed to copy text: ', error);
       toast({
         title: "Copy Failed",
         description: "Unable to copy link. Please copy it manually.",
@@ -80,6 +110,7 @@ const ReferralSection = () => {
               variant="outline"
               size="sm"
               className="px-3"
+              type="button"
             >
               <Copy className="w-4 h-4" />
             </Button>
@@ -100,6 +131,7 @@ const ReferralSection = () => {
             <Button
               onClick={sendReferral}
               className="bg-pink-600 hover:bg-pink-700"
+              type="button"
             >
               Send
             </Button>
