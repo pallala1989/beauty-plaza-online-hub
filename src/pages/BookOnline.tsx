@@ -4,7 +4,7 @@ import BookingProgressIndicator from "@/components/booking/BookingProgressIndica
 import BookingFlow from "@/components/booking/BookingFlow";
 import BookingNavigation from "@/components/booking/BookingNavigation";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
-import { useBookingFlow } from "@/hooks/useBookingFlow";
+import { useBookingFlow } from "@/hooks/booking/useBookingFlow";
 
 const BookOnline = () => {
   const {
