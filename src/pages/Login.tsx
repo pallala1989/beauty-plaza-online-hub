@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -16,33 +16,26 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn, user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/");
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all fields.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Simulate login process
-    setTimeout(() => {
-      toast({
-        title: "Login Successful!",
-        description: "Welcome back to Beauty Plaza.",
-      });
+    const { error } = await signIn(formData.email, formData.password);
+    
+    if (!error) {
       navigate("/");
-      setIsLoading(false);
-    }, 1000);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +44,14 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

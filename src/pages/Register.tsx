@@ -1,12 +1,11 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,53 +20,37 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { signUp, user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/");
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match.",
-        variant: "destructive",
-      });
       setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
       setIsLoading(false);
       return;
     }
 
-    // Simulate registration process
-    setTimeout(() => {
-      toast({
-        title: "Registration Successful!",
-        description: "Welcome to Beauty Plaza! You've earned 100 welcome bonus points.",
-      });
+    const fullName = `${formData.firstName} ${formData.lastName}`;
+    const { error } = await signUp(formData.email, formData.password, fullName);
+    
+    if (!error) {
       navigate("/");
-      setIsLoading(false);
-    }, 1500);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,6 +59,14 @@ const Register = () => {
       [e.target.name]: e.target.value
     });
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -142,7 +133,7 @@ const Register = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="(123) 456-7890"
+                  placeholder="(903) 921-0271"
                 />
               </div>
 
