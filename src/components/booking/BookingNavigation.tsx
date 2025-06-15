@@ -39,15 +39,16 @@ const BookingNavigation: React.FC<BookingNavigationProps> = ({
       {!isLastStep ? (
         <Button
           onClick={onNext}
-          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+          disabled={isNextDisabled}
+          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </Button>
       ) : (
         <Button
           onClick={onSubmit}
-          disabled={isLoading}
-          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+          disabled={isLoading || isNextDisabled}
+          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Booking..." : "Confirm Booking"}
         </Button>

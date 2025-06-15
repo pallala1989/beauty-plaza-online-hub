@@ -10,12 +10,14 @@ export const useBookingData = () => {
 
   const fetchServices = async () => {
     try {
+      console.log('Fetching services...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true);
       
       if (error) throw error;
+      console.log('Services fetched:', data);
       setServices(data || []);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -24,12 +26,14 @@ export const useBookingData = () => {
 
   const fetchTechnicians = async () => {
     try {
+      console.log('Fetching technicians...');
       const { data, error } = await supabase
         .from('technicians')
         .select('*')
         .eq('is_available', true);
       
       if (error) throw error;
+      console.log('Technicians fetched:', data);
       setTechnicians(data || []);
     } catch (error) {
       console.error('Error fetching technicians:', error);
@@ -57,6 +61,7 @@ export const useBookingData = () => {
   };
 
   useEffect(() => {
+    console.log('useBookingData: Initial fetch triggered');
     fetchServices();
     fetchTechnicians();
   }, []);
