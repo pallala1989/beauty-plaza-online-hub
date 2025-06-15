@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { isValidEmail, validateEmailDomain } from "@/components/auth/EmailValidation";
+import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -19,9 +21,11 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
   
   const navigate = useNavigate();
   const { signUp, user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -29,19 +33,52 @@ const Register = () => {
     }
   }, [user, authLoading, navigate]);
 
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError("");
+      return true;
+    }
+    
+    if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    
+    if (!validateEmailDomain(email)) {
+      setEmailError("Please use a valid email domain");
+      return false;
+    }
+    
+    setEmailError("");
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    if (!validateEmail(formData.email)) {
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
-      setIsLoading(false);
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive",
+      });
       return;
     }
 
     if (formData.password.length < 6) {
-      setIsLoading(false);
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
       return;
     }
+
+    setIsLoading(true);
 
     const fullName = `${formData.firstName} ${formData.lastName}`;
     const { error } = await signUp(formData.email, formData.password, fullName);
@@ -54,10 +91,16 @@ const Register = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Validate email on change
+    if (name === "email") {
+      validateEmail(value);
+    }
   };
 
   if (authLoading) {
@@ -121,8 +164,12 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="john.doe@example.com"
+                  className={emailError ? "border-red-500" : ""}
                   required
                 />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
               </div>
 
               <div>
@@ -221,7 +268,7 @@ const Register = () => {
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !!emailError}
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
               >
                 {isLoading ? "Creating Account..." : "Create Account"}

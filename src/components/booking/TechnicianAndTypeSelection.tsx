@@ -26,6 +26,10 @@ const TechnicianAndTypeSelection: React.FC<TechnicianAndTypeSelectionProps> = ({
   onTechnicianSelect,
   onServiceTypeChange
 }) => {
+  console.log('TechnicianAndTypeSelection - selectedTechnician:', selectedTechnician);
+  console.log('TechnicianAndTypeSelection - serviceType:', serviceType);
+  console.log('TechnicianAndTypeSelection - technicians:', technicians);
+
   return (
     <div className="space-y-6">
       <div>

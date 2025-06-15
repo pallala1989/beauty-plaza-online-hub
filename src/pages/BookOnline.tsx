@@ -72,7 +72,17 @@ const BookOnline = () => {
     }
   }, [user]);
 
+  console.log('BookOnline - Current state:', {
+    step,
+    selectedService,
+    selectedTechnician,
+    serviceType,
+    selectedDate,
+    selectedTime
+  });
+
   const handleNext = () => {
+    console.log('handleNext called - current step:', step);
     // Skip step 4 for in-store appointments
     if (step === 3 && serviceType === "in-store") {
       setStep(5);
@@ -247,6 +257,32 @@ const BookOnline = () => {
     return `Step ${serviceType === "in-store" ? 4 : 5}: Your Information`;
   };
 
+  // Check if next button should be enabled
+  const isNextDisabled = () => {
+    console.log('Checking if next is disabled for step:', step);
+    if (step === 1) {
+      const disabled = !selectedService;
+      console.log('Step 1 - selectedService:', selectedService, 'disabled:', disabled);
+      return disabled;
+    }
+    if (step === 2) {
+      const disabled = !selectedTechnician || !serviceType;
+      console.log('Step 2 - selectedTechnician:', selectedTechnician, 'serviceType:', serviceType, 'disabled:', disabled);
+      return disabled;
+    }
+    if (step === 3) {
+      const disabled = !selectedDate || !selectedTime;
+      console.log('Step 3 - selectedDate:', selectedDate, 'selectedTime:', selectedTime, 'disabled:', disabled);
+      return disabled;
+    }
+    if (step === 4 && serviceType === "in-home") {
+      const disabled = otp !== "1234";
+      console.log('Step 4 - otp:', otp, 'disabled:', disabled);
+      return disabled;
+    }
+    return false;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -348,12 +384,7 @@ const BookOnline = () => {
           {((step < 4 && serviceType === "in-store") || (step < 5 && serviceType === "in-home")) ? (
             <Button
               onClick={handleNext}
-              disabled={
-                (step === 1 && !selectedService) ||
-                (step === 2 && (!selectedTechnician || !serviceType)) ||
-                (step === 3 && (!selectedDate || !selectedTime)) ||
-                (step === 4 && serviceType === "in-home" && otp !== "1234")
-              }
+              disabled={isNextDisabled()}
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
             >
               Next
