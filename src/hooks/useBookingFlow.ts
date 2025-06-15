@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -212,11 +211,7 @@ export const useBookingFlow = () => {
   };
 
   const isNextDisabled = () => {
-    if (step === 1) return !selectedService;
-    if (step === 2) return !selectedTechnician;
-    if (step === 3) return !selectedDate || !selectedTime;
-    if (step === 4 && serviceType === "in-home") return otp !== "1234";
-    return false;
+    return false; // Always allow next
   };
 
   return {
