@@ -181,7 +181,7 @@ const Services = () => {
               
               <CardContent>
                 <p className="text-gray-600 mb-4">{service.description}</p>
-                <Link to="/book-online" state={{ selectedService: service }}>
+                <Link to="/book-online" state={{ preSelectedService: service }}>
                   <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700">
                     Book This Service
                   </Button>
@@ -209,9 +209,10 @@ const Services = () => {
               size="lg" 
               variant="outline" 
               className="border-white text-white hover:bg-white hover:text-pink-600"
-              onClick={() => window.open("tel:+13024567890", "_self")}
+              onClick={() => window.open("tel:+19039210271", "_self")}
             >
-              Call (302) 456-7890
+              <Phone className="w-4 h-4 mr-2" />
+              Call (903) 921-0271
             </Button>
           </div>
         </div>

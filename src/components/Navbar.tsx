@@ -3,11 +3,13 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone } from "lucide-react";
+import { Menu, Phone, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, profile, signOut } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -20,7 +22,23 @@ const Navbar = () => {
     { name: "Contact", href: "/contact" },
   ];
 
+  // Add role-specific navigation
+  const roleSpecificNavigation = [];
+  if (profile?.role === 'admin') {
+    roleSpecificNavigation.push({ name: "Admin Dashboard", href: "/admin" });
+  }
+  if (profile?.role === 'customer') {
+    roleSpecificNavigation.push({ name: "My Bookings", href: "/my-bookings" });
+  }
+
+  const allNavigation = [...navigation, ...roleSpecificNavigation];
+
   const isActive = (href: string) => location.pathname === href;
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsOpen(false);
+  };
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -35,7 +53,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
-            {navigation.map((item) => (
+            {allNavigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -52,17 +70,39 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center space-x-4">
             <Button
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
-              onClick={() => window.open("tel:+13024567890", "_self")}
+              onClick={() => window.open("tel:+19039210271", "_self")}
             >
               <Phone className="w-4 h-4 mr-2" />
               Call Now
             </Button>
-            <Link to="/login">
-              <Button variant="outline">Login</Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-pink-600 hover:bg-pink-700">Sign Up</Button>
-            </Link>
+            
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/profile">
+                  <Button variant="outline" className="flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    {profile?.full_name || 'Profile'}
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSignOut}
+                  className="flex items-center"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link to="/login">
+                  <Button variant="outline">Login</Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="bg-pink-600 hover:bg-pink-700">Sign Up</Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -74,7 +114,7 @@ const Navbar = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <div className="flex flex-col space-y-4 mt-4">
-                {navigation.map((item) => (
+                {allNavigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
@@ -89,17 +129,39 @@ const Navbar = () => {
                 <div className="pt-4 space-y-2">
                   <Button
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                    onClick={() => window.open("tel:+13024567890", "_self")}
+                    onClick={() => window.open("tel:+19039210271", "_self")}
                   >
                     <Phone className="w-4 h-4 mr-2" />
                     Call Now
                   </Button>
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full">Login</Button>
-                  </Link>
-                  <Link to="/register" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">Sign Up</Button>
-                  </Link>
+                  
+                  {user ? (
+                    <>
+                      <Link to="/profile" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full">
+                          <User className="w-4 h-4 mr-2" />
+                          {profile?.full_name || 'Profile'}
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={handleSignOut}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full">Login</Button>
+                      </Link>
+                      <Link to="/register" onClick={() => setIsOpen(false)}>
+                        <Button className="w-full bg-pink-600 hover:bg-pink-700">Sign Up</Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

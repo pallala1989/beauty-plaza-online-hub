@@ -52,6 +52,15 @@ const Footer = () => {
                 Mon-Sat: 9AM - 7PM<br />
                 Sunday: 10AM - 5PM
               </p>
+              <div className="mt-4">
+                <a 
+                  href="tel:+19039210271" 
+                  className="inline-flex items-center text-pink-400 hover:text-pink-300 transition-colors"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  (903) 921-0271
+                </a>
+              </div>
             </div>
           </div>
         </div>
