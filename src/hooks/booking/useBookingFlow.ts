@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useMemo } from "react";
 import { useBookingData } from "@/hooks/useBookingData";
 import { useBookingState } from "./useBookingState";
@@ -109,14 +108,6 @@ export const useBookingFlow = () => {
       clearBookedSlots();
     }
   }, [selectedTechnician, currentMonth, fetchMonthlyBookedData, clearBookedSlots]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      if (selectedDate.getMonth() !== currentMonth.getMonth() || selectedDate.getFullYear() !== currentMonth.getFullYear()) {
-        setCurrentMonth(selectedDate);
-      }
-    }
-  }, [selectedDate, currentMonth]);
 
   useEffect(() => {
     if (selectedTechnician && step === 3) {
