@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Phone, Clock, Mail } from "lucide-react";
+import { isValidEmail } from "@/components/auth/EmailValidation";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -16,10 +17,11 @@ const Contact = () => {
     subject: "",
     message: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.message) {
@@ -31,20 +33,43 @@ const Contact = () => {
       return;
     }
 
-    // Here you would send the form data to your backend
-    toast({
-      title: "Message Sent!",
-      description: "Thank you for contacting us. We'll get back to you soon.",
-    });
+    if (!isValidEmail(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "",
-      message: ""
-    });
+    setIsSubmitting(true);
+
+    try {
+      // Simulate sending email - in real app, this would call your email service
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: ""
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -149,9 +174,12 @@ const Contact = () => {
                 <p className="text-gray-600 mb-4">
                   For general inquiries and appointments
                 </p>
-                <p className="text-pink-600 font-semibold">
+                <a 
+                  href="mailto:info@beautyplaza.com" 
+                  className="text-pink-600 font-semibold hover:text-pink-700 transition-colors"
+                >
                   info@beautyplaza.com
-                </p>
+                </a>
               </CardContent>
             </Card>
           </div>
@@ -189,7 +217,11 @@ const Contact = () => {
                         onChange={handleChange}
                         required
                         placeholder="your.email@example.com"
+                        className={!isValidEmail(formData.email) && formData.email ? "border-red-300" : ""}
                       />
+                      {!isValidEmail(formData.email) && formData.email && (
+                        <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>
+                      )}
                     </div>
                   </div>
 
@@ -232,9 +264,10 @@ const Contact = () => {
 
                   <Button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
                   >
-                    Send Message
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
               </CardContent>
