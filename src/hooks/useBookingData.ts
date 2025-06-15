@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
@@ -59,7 +59,7 @@ export const useBookingData = () => {
     }
   };
 
-  const fetchMonthlyBookedData = async (month: Date, selectedTechnician: string) => {
+  const fetchMonthlyBookedData = useCallback(async (month: Date, selectedTechnician: string) => {
     if (!month || !selectedTechnician) {
       setMonthlyBookedData({});
       return;
@@ -106,14 +106,14 @@ export const useBookingData = () => {
     } finally {
       setIsFetchingSlots(false);
     }
-  };
+  }, []);
 
-  const refreshBookedSlots = async (month?: Date, selectedTechnician?: string) => {
+  const refreshBookedSlots = useCallback(async (month?: Date, selectedTechnician?: string) => {
     if (month && selectedTechnician) {
       console.log('Force refreshing monthly booked slots...');
       await fetchMonthlyBookedData(month, selectedTechnician);
     }
-  };
+  }, [fetchMonthlyBookedData]);
 
   useEffect(() => {
     console.log('useBookingData: Initial fetch triggered');
@@ -125,9 +125,9 @@ export const useBookingData = () => {
     console.log('Technicians state updated:', technicians);
   }, [technicians]);
 
-  const clearBookedSlots = () => {
+  const clearBookedSlots = useCallback(() => {
     setMonthlyBookedData({});
-  };
+  }, []);
 
   return {
     services,
