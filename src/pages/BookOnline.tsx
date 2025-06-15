@@ -42,12 +42,10 @@ const BookOnline = () => {
   const maxStep = serviceType === "in-store" ? 4 : 5;
 
   const handleTechnicianSelect = (technicianId: string) => {
-    console.log('Technician selected in parent:', technicianId);
     setSelectedTechnician(technicianId);
   };
 
   const handleServiceTypeChange = (newServiceType: string) => {
-    console.log('Service type changed in parent:', newServiceType);
     setServiceType(newServiceType);
   };
 
@@ -58,7 +56,6 @@ const BookOnline = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
             Book Your Appointment
@@ -68,10 +65,8 @@ const BookOnline = () => {
           </p>
         </div>
 
-        {/* Progress Indicator */}
         <BookingProgressIndicator currentStep={step} maxStep={maxStep} />
 
-        {/* Booking Flow */}
         <BookingFlow
           step={step}
           serviceType={serviceType}
@@ -97,7 +92,6 @@ const BookOnline = () => {
           onVerifyOtp={verifyOtp}
         />
 
-        {/* Navigation Buttons */}
         <BookingNavigation
           step={step}
           serviceType={serviceType}
@@ -109,7 +103,6 @@ const BookOnline = () => {
           onSubmit={handleSubmit}
         />
 
-        {/* Confirmation Dialog */}
         <BookingConfirmation
           isOpen={showConfirmation}
           bookingDetails={bookingDetails}

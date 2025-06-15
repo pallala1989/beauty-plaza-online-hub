@@ -23,8 +23,7 @@ const BookingNavigation: React.FC<BookingNavigationProps> = ({
   onNext,
   onSubmit
 }) => {
-  const maxStep = serviceType === "in-store" ? 4 : 5;
-  const isLastStep = ((step === 4 && serviceType === "in-store") || (step === 5));
+  const isLastStep = (step === 4 && serviceType === "in-store") || (step === 5 && serviceType === "in-home");
 
   return (
     <div className="flex justify-between">

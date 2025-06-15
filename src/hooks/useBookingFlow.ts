@@ -61,20 +61,11 @@ export const useBookingFlow = () => {
   }, [user]);
 
   const handleNext = () => {
-    console.log('handleNext called - current step:', step);
-    // Skip step 4 for in-store appointments
-    if (step === 3 && serviceType === "in-store") {
-      setStep(5);
-    } else if (step < 5) {
-      setStep(step + 1);
-    }
+    setStep(step + 1);
   };
 
   const handleBack = () => {
-    // Handle back navigation considering skipped step 4 for in-store
-    if (step === 5 && serviceType === "in-store") {
-      setStep(3);
-    } else if (step > 1) {
+    if (step > 1) {
       setStep(step - 1);
     }
   };
@@ -89,7 +80,6 @@ export const useBookingFlow = () => {
       return;
     }
 
-    // Simulate OTP sending
     setOtpSent(true);
     toast({
       title: "OTP Sent",
@@ -98,7 +88,7 @@ export const useBookingFlow = () => {
   };
 
   const verifyOtp = () => {
-    if (otp === "1234") { // Demo OTP
+    if (otp === "1234") {
       toast({
         title: "OTP Verified",
         description: "Phone number verified successfully!",
@@ -152,19 +142,18 @@ export const useBookingFlow = () => {
         .single();
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           toast({
             title: "Time Slot Unavailable",
             description: "This time slot is already booked. Please select a different time.",
             variant: "destructive",
           });
-          setStep(3); // Go back to date/time selection
+          setStep(3);
           return;
         }
         throw error;
       }
 
-      // Send confirmation email
       await sendConfirmationEmail({
         services,
         technicians,
@@ -177,7 +166,6 @@ export const useBookingFlow = () => {
         totalAmount
       });
 
-      // Set booking details for confirmation dialog
       setBookingDetails({
         ...appointmentData,
         service_name: selectedServiceDetails?.name,
@@ -220,7 +208,6 @@ export const useBookingFlow = () => {
       notes: ""
     });
     
-    // Navigate to home
     navigate("/");
   };
 
