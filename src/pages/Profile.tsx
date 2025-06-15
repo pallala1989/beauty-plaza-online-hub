@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Heart, Gift, Settings } from "lucide-react";
+import AppointmentHistory from "@/components/profile/AppointmentHistory";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -29,33 +29,6 @@ const Profile = () => {
     pointsToNext: 150
   };
 
-  const appointments = [
-    {
-      id: 1,
-      service: "Classic Facial",
-      date: "2024-02-15",
-      time: "2:00 PM",
-      technician: "Emma Davis",
-      status: "Upcoming"
-    },
-    {
-      id: 2,
-      service: "Hair Color",
-      date: "2024-01-20",
-      time: "10:00 AM", 
-      technician: "Sarah Johnson",
-      status: "Completed"
-    },
-    {
-      id: 3,
-      service: "Bridal Makeup",
-      date: "2024-01-05",
-      time: "3:00 PM",
-      technician: "Lisa Chen", 
-      status: "Completed"
-    }
-  ];
-
   const referrals = [
     { name: "Emma Wilson", date: "2024-01-15", status: "Completed", earned: 10 },
     { name: "Lisa Davis", date: "2024-01-02", status: "Completed", earned: 10 },
@@ -67,19 +40,6 @@ const Profile = () => {
       title: "Profile Updated!",
       description: "Your profile information has been successfully updated.",
     });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Upcoming":
-        return "bg-blue-100 text-blue-800";
-      case "Completed":
-        return "bg-green-100 text-green-800";
-      case "Cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
   };
 
   return (
@@ -226,38 +186,7 @@ const Profile = () => {
 
           {/* Appointments Tab */}
           <TabsContent value="appointments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appointment History</CardTitle>
-                <CardDescription>View and manage your past and upcoming appointments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{appointment.service}</h3>
-                          <p className="text-sm text-gray-600">with {appointment.technician}</p>
-                          <p className="text-sm text-gray-600">{appointment.date} at {appointment.time}</p>
-                        </div>
-                        <Badge className={getStatusColor(appointment.status)}>
-                          {appointment.status}
-                        </Badge>
-                      </div>
-                      {appointment.status === "Upcoming" && (
-                        <div className="mt-3 space-x-2">
-                          <Button size="sm" variant="outline">Reschedule</Button>
-                          <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <AppointmentHistory />
           </TabsContent>
 
           {/* Loyalty Tab */}
