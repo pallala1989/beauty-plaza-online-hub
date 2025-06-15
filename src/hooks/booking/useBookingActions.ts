@@ -21,7 +21,8 @@ export const useBookingActions = (
   setOtp: (otp: string) => void,
   setCustomerInfo: (info: any) => void,
   customerInfo: any,
-  isNextDisabled: (step: number, ...args: any[]) => boolean
+  isNextDisabled: (step: number, ...args: any[]) => boolean,
+  refreshBookedSlots?: (date?: Date, technician?: string) => Promise<void>
 ) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -105,6 +106,39 @@ export const useBookingActions = (
     setIsLoading(true);
 
     try {
+      // Double-check slot availability before booking
+      if (refreshBookedSlots) {
+        await refreshBookedSlots(selectedDate, selectedTechnician);
+      }
+
+      // Re-check if the slot is still available after refresh
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const { data: existingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('technician_id', selectedTechnician)
+        .eq('appointment_date', formattedDate)
+        .eq('appointment_time', selectedTime)
+        .in('status', ['scheduled', 'confirmed']);
+
+      if (checkError) {
+        console.error('Error checking slot availability:', checkError);
+        throw checkError;
+      }
+
+      if (existingAppointments && existingAppointments.length > 0) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot was just booked by someone else. Please select a different time.",
+          variant: "destructive",
+        });
+        setStep(3); // Go back to date/time selection
+        if (refreshBookedSlots) {
+          await refreshBookedSlots(selectedDate, selectedTechnician);
+        }
+        return;
+      }
+
       const selectedServiceDetails = services.find(s => s.id === selectedService);
       const totalAmount = (selectedServiceDetails?.price || 0) + (serviceType === "in-home" ? 25 : 0);
 
@@ -112,7 +146,7 @@ export const useBookingActions = (
         customer_id: user.id,
         service_id: selectedService,
         technician_id: selectedTechnician,
-        appointment_date: format(selectedDate, 'yyyy-MM-dd'),
+        appointment_date: formattedDate,
         appointment_time: selectedTime,
         service_type: serviceType,
         notes: customerInfo.notes,
@@ -137,6 +171,9 @@ export const useBookingActions = (
             variant: "destructive",
           });
           setStep(3);
+          if (refreshBookedSlots) {
+            await refreshBookedSlots(selectedDate, selectedTechnician);
+          }
           return;
         }
         throw error;

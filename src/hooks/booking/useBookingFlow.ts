@@ -5,7 +5,7 @@ import { useBookingValidation } from "./useBookingValidation";
 import { useBookingActions } from "./useBookingActions";
 
 export const useBookingFlow = () => {
-  const { services, technicians, bookedSlots, fetchBookedSlots, clearBookedSlots } = useBookingData();
+  const { services, technicians, bookedSlots, fetchBookedSlots, clearBookedSlots, refreshBookedSlots } = useBookingData();
   
   const {
     step,
@@ -58,7 +58,8 @@ export const useBookingFlow = () => {
     setOtp,
     setCustomerInfo,
     customerInfo,
-    isNextDisabled
+    isNextDisabled,
+    refreshBookedSlots
   );
 
   // Clear booked slots when technician changes
@@ -85,6 +86,18 @@ export const useBookingFlow = () => {
       clearBookedSlots();
     }
   }, [selectedDate, selectedTechnician, fetchBookedSlots, clearBookedSlots]);
+
+  // Refresh booked slots every 30 seconds to keep data current
+  useEffect(() => {
+    if (selectedDate && selectedTechnician && step === 3) {
+      const interval = setInterval(() => {
+        console.log('Auto-refreshing booked slots...');
+        fetchBookedSlots(selectedDate, selectedTechnician);
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [selectedDate, selectedTechnician, step, fetchBookedSlots]);
 
   const wrappedHandleNext = () => {
     handleNext(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, technicians);

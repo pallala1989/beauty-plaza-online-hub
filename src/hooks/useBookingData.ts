@@ -73,12 +73,14 @@ export const useBookingData = () => {
         selectedTechnician 
       });
       
+      // Fetch with real-time subscription to ensure we get latest data
       const { data, error } = await supabase
         .from('appointments')
         .select('appointment_time, status')
         .eq('technician_id', selectedTechnician)
         .eq('appointment_date', formattedDate)
-        .in('status', ['scheduled', 'confirmed']);
+        .in('status', ['scheduled', 'confirmed'])
+        .order('appointment_time');
       
       if (error) {
         console.error('Error fetching booked slots:', error);
@@ -91,6 +93,14 @@ export const useBookingData = () => {
     } catch (error) {
       console.error('Error fetching booked slots:', error);
       setBookedSlots([]);
+    }
+  };
+
+  // Force refresh booked slots - useful for real-time updates
+  const refreshBookedSlots = async (selectedDate?: Date, selectedTechnician?: string) => {
+    if (selectedDate && selectedTechnician) {
+      console.log('Force refreshing booked slots...');
+      await fetchBookedSlots(selectedDate, selectedTechnician);
     }
   };
 
@@ -114,6 +124,7 @@ export const useBookingData = () => {
     technicians,
     bookedSlots,
     fetchBookedSlots,
-    clearBookedSlots
+    clearBookedSlots,
+    refreshBookedSlots
   };
 };

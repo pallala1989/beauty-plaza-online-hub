@@ -27,6 +27,14 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
 }) => {
   console.log('DateTimeSelection rendered with bookedSlots:', bookedSlots);
 
+  const handleTimeSelect = (time: string) => {
+    // Prevent selection of booked slots
+    if (bookedSlots.includes(time)) {
+      return;
+    }
+    onTimeSelect(time);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -65,10 +73,10 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                     isSelected
                       ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
                       : isBooked
-                      ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
+                      ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500 hover:bg-gray-200"
                       : "border-pink-200 text-pink-600 hover:bg-pink-50"
                   }`}
-                  onClick={() => !isBooked && onTimeSelect(time)}
+                  onClick={() => handleTimeSelect(time)}
                 >
                   {time}
                   {isBooked && " (Booked)"}
@@ -78,7 +86,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
           </div>
           {bookedSlots.length > 0 && (
             <p className="text-sm text-gray-600 mt-2">
-              Unavailable times are marked as "Booked"
+              Unavailable times are marked as "Booked" and cannot be selected
             </p>
           )}
         </div>
