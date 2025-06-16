@@ -3,253 +3,91 @@
 
 This repository contains the code for Beauty Plaza, a full-stack web application for a beauty salon. It includes a React frontend and a Spring Boot backend.
 
-## Frontend (React + Vite)
+## Quick Start
 
-The frontend is built with React, Vite, TypeScript, Tailwind CSS, and Shadcn UI components.
+1. **Frontend**: React + Vite + TypeScript + Tailwind CSS + Shadcn UI
+2. **Backend**: Spring Boot + MySQL + OAuth2 Authentication
+3. **Features**: Service booking, customer management, admin dashboard, loyalty program
 
-### Key Features
-- Service browsing and selection
-- Online appointment booking flow
-- Customer authentication (Login/Register via OAuth)
-- User profile management (view bookings, update info)
-- Admin dashboard for managing services, technicians, and settings.
+## Project Structure
 
-## Backend (Spring Boot)
-
-The backend is a Spring Boot application that provides a RESTful API for the frontend. It is designed to be secured using OAuth2.
-
-### Architecture
-- **Controller Layer**: Handles HTTP requests and responses.
-- **Service Layer**: Contains business logic.
-- **Repository Layer**: Interacts with the database using Spring Data JPA.
-- **Model/Entity Layer**: Defines the data structures.
-- **DTOs**: Data Transfer Objects for clean API contracts.
-- **Security**: OAuth2 for authentication and authorization.
-
-### Database Schema
-The application uses a PostgreSQL database with the following main tables:
-- `services`
-- `technicians`
-- `appointments`
-- `users` (from Supabase Auth)
-- `profiles`
-- `promotions`
-- `gift_cards`
-- `loyalty_points`
-
-### API Endpoints
-- `GET /api/services`
-- `GET /api/technicians`
-- `GET /api/appointments/slots`
-- `POST /api/appointments/book`
-- `GET /api/admin/settings`
-- `POST /api/admin/settings`
-
----
-
-### Backend Setup and Configuration
-
-#### `pom.xml` (Dependencies)
-```xml
-<dependencies>
-    <!-- Spring Boot Starters -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-oauth2-client</artifactId>
-    </dependency>
-
-    <!-- PostgreSQL Driver -->
-    <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-
-    <!-- Lombok -->
-    <dependency>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok</artifactId>
-        <optional>true</optional>
-    </dependency>
-</dependencies>
+```
+├── src/                    # React frontend application
+├── docs/                   # Detailed documentation
+├── backend-setup/          # Backend configuration and setup files
+└── database/              # Database schema and sample data
 ```
 
-#### `application.properties`
-```properties
-# Database Connection (replace with your Supabase DB credentials)
-spring.datasource.url=jdbc:postgresql://<your_supabase_db_host>:<port>/postgres
-spring.datasource.username=postgres
-spring.datasource.password=<your_supabase_db_password>
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+## Frontend Features
 
-# Spring Security OAuth2 Client Configuration (Example for Google)
-spring.security.oauth2.client.registration.google.client-id=<your-google-client-id>
-spring.security.oauth2.client.registration.google.client-secret=<your-google-client-secret>
-spring.security.oauth2.client.registration.google.scope=openid,profile,email
-spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}
+- **Service Browsing**: Browse and filter beauty services
+- **Online Booking**: Complete appointment booking flow with date/time selection
+- **Authentication**: OAuth-based login with admin panel access
+- **User Management**: Customer profiles, booking history, loyalty points
+- **Admin Dashboard**: Service management, technician scheduling, settings
+- **Responsive Design**: Mobile-first design with Tailwind CSS
+
+## Backend Features
+
+- **RESTful API**: Complete REST API for all frontend operations
+- **OAuth2 Security**: Secure authentication and authorization
+- **MySQL Database**: Robust data persistence with JPA/Hibernate
+- **Admin Panel**: Administrative functions with role-based access
+- **Data Fallback**: Graceful fallback to local JSON data when backend unavailable
+
+## Getting Started
+
+### Frontend Setup
+```bash
+npm install
+npm run dev
 ```
 
-#### Security Configuration (`SecurityConfig.java`)
-```java
-package com.beautyplaza.config;
+### Backend Setup
+See [Backend Setup Guide](./docs/backend-setup.md) for detailed instructions.
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+### Database Setup
+See [Database Documentation](./docs/database.md) for MySQL schema and sample data.
 
-import static org.springframework.security.config.Customizer.withDefaults;
+## Documentation
 
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
+- [Backend Setup & Configuration](./docs/backend-setup.md)
+- [API Documentation](./docs/api-documentation.md)
+- [Database Schema & Queries](./docs/database.md)
+- [Authentication & Security](./docs/authentication.md)
+- [Deployment Guide](./docs/deployment.md)
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(
-                    "/", 
-                    "/api/services/**", 
-                    "/api/technicians/**",
-                    "/error",
-                    "/actuator/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2Login(withDefaults());
-        return http.build();
-    }
-}
-```
+## Default Admin Access
 
----
+- **Username**: `admin`
+- **Password**: `admin`
+- **Role**: Admin access to dashboard and settings
 
-### Java Class Definitions
+## Technology Stack
 
-Below are the definitions for key Java classes used in the backend.
+### Frontend
+- React 18 with TypeScript
+- Vite for build tooling
+- Tailwind CSS for styling
+- Shadcn UI components
+- React Router for navigation
+- React Query for data fetching
 
-#### DTOs (Data Transfer Objects)
+### Backend
+- Spring Boot 3.x
+- Spring Security with OAuth2
+- Spring Data JPA
+- MySQL 8.x
+- Maven for dependency management
 
-**`ServiceDTO.java`**
-```java
-package com.beautyplaza.dto;
+## Contributing
 
-import lombok.Data;
-import java.math.BigDecimal;
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-@Data
-public class ServiceDTO {
-    private Long id;
-    private String name;
-    private String description;
-    private BigDecimal price;
-    private Integer duration; // in minutes
-    private String imageUrl;
-    private boolean isActive;
-}
-```
+## License
 
-**`TechnicianDTO.java`**
-```java
-package com.beautyplaza.dto;
-
-import lombok.Data;
-import java.util.List;
-
-@Data
-public class TechnicianDTO {
-    private Long id;
-    private String name;
-    private List<String> specialties;
-    private boolean isAvailable;
-}
-```
-
-**`AppointmentDTO.java`**
-```java
-package com.beautyplaza.dto;
-
-import lombok.Data;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-@Data
-public class AppointmentDTO {
-    private Long id;
-    private Long serviceId;
-    private String serviceName;
-    private Long technicianId;
-    private String technicianName;
-    private Long customerId;
-    private String customerName;
-    private String customerEmail;
-    private String customerPhone;
-    private LocalDate appointmentDate;
-    private LocalTime appointmentTime;
-    private String status; // e.g., "scheduled", "confirmed", "cancelled"
-    private String serviceType; // e.g., "in-store" or "in-home"
-    private String notes;
-    private BigDecimal totalAmount;
-}
-```
-
-**`ProfileDTO.java`**
-```java
-package com.beautyplaza.dto;
-
-import lombok.Data;
-
-@Data
-public class ProfileDTO {
-    private String id; // UUID from Auth provider
-    private String fullName;
-    private String email;
-    private String phone;
-    private String address;
-    private String role; // e.g., "customer", "admin"
-}
-```
-
-#### Request/Response Payloads
-
-**`BookingRequest.java`**
-```java
-package com.beautyplaza.request;
-
-import lombok.Data;
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-@Data
-public class BookingRequest {
-    private Long serviceId;
-    private Long technicianId;
-    private LocalDate appointmentDate;
-    private LocalTime appointmentTime;
-    private String serviceType;
-    private String customerName;
-    private String customerEmail;
-    private String customerPhone;
-    private String notes;
-}
-```
-
----
-
-This detailed setup provides a solid foundation for local development and further feature implementation.
+This project is licensed under the MIT License.
