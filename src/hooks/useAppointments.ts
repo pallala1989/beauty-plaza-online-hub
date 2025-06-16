@@ -20,8 +20,10 @@ interface AppointmentWithDetails {
   };
 }
 
+const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
+
 export const useAppointments = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +35,32 @@ export const useAppointments = () => {
     }
 
     try {
+      setIsLoading(true);
+      setError(null);
+      
       console.log('Fetching appointments for user:', user.id);
       
+      // Try Spring Boot backend first
+      try {
+        const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/appointments/user/${user.id}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.id}` // Basic auth header
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Appointments fetched from Spring Boot:', data);
+          setAppointments(data);
+          return;
+        }
+      } catch (backendError) {
+        console.log('Spring Boot unavailable, trying Supabase:', backendError);
+      }
+      
+      // Fallback to Supabase
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -58,11 +84,11 @@ export const useAppointments = () => {
 
       if (error) {
         console.error('Error fetching appointments:', error);
-        setError(error.message);
+        setError('Failed to load appointments');
         return;
       }
 
-      console.log('Fetched appointments:', data);
+      console.log('Fetched appointments from Supabase:', data);
       
       // Transform the data to match our interface
       const transformedData = data?.map(appointment => ({
@@ -85,7 +111,7 @@ export const useAppointments = () => {
       setAppointments(transformedData);
     } catch (error: any) {
       console.error('Error in fetchAppointments:', error);
-      setError(error.message);
+      setError('Failed to load appointments');
     } finally {
       setIsLoading(false);
     }

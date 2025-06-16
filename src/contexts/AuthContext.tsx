@@ -91,36 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
-      // Check for default admin credentials
-      if (email === 'admin' && password === 'admin') {
-        // Create a mock admin session
-        const mockAdminProfile: Profile = {
-          id: 'admin-user-id',
-          email: 'admin@beautyplaza.com',
-          full_name: 'Admin User',
-          role: 'admin'
-        };
-        
-        setProfile(mockAdminProfile);
-        setUser({
-          id: 'admin-user-id',
-          email: 'admin@beautyplaza.com',
-          created_at: new Date().toISOString(),
-          app_metadata: {},
-          user_metadata: {},
-          aud: 'authenticated'
-        } as User);
-
-        toast({
-          title: "Welcome Admin!",
-          description: "You have successfully signed in as admin.",
-        });
-
-        return { error: null };
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -135,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       toast({
         title: "Sign In Failed",
-        description: error.message,
+        description: error.message || "An error occurred during sign in",
         variant: "destructive",
       });
       return { error };
@@ -147,13 +119,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setIsLoading(true);
+      
+      // Input validation
+      if (!email || !password || !fullName) {
+        throw new Error('All fields are required');
+      }
+      
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+      
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: fullName,
+            full_name: fullName.trim(),
           }
         }
       });
@@ -162,14 +144,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toast({
         title: "Account Created!",
-        description: "Welcome to Beauty Plaza! You've earned 100 welcome bonus points.",
+        description: "Welcome to Beauty Plaza! Please check your email to confirm your account.",
       });
 
       return { error: null };
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",
-        description: error.message,
+        description: error.message || "An error occurred during sign up",
         variant: "destructive",
       });
       return { error };
@@ -180,19 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Handle admin logout
-      if (profile?.role === 'admin' && user?.id === 'admin-user-id') {
-        setUser(null);
-        setProfile(null);
-        setSession(null);
-        
-        toast({
-          title: "Signed out successfully",
-          description: "You have been logged out.",
-        });
-        return;
-      }
-
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -207,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       toast({
         title: "Sign out failed",
-        description: error.message,
+        description: error.message || "An error occurred during sign out",
         variant: "destructive",
       });
     }
@@ -215,12 +184,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error('No user logged in') };
-
-    // Skip profile update for admin user
-    if (user.id === 'admin-user-id') {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-      return { error: null };
-    }
 
     try {
       const { data, error } = await supabase

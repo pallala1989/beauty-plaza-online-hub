@@ -1,38 +1,76 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import servicesData from '@/data/services.json';
 import techniciansData from '@/data/technicians.json';
 
+const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
+
 export const useBookingData = () => {
   const [services, setServices] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [monthlyBookedData, setMonthlyBookedData] = useState<Record<string, string[]>>({});
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
+
+  const checkBackendHealth = async (): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/health`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        setBackendStatus('available');
+        return true;
+      }
+    } catch (error) {
+      console.log('Spring Boot backend not available:', error);
+    }
+    
+    setBackendStatus('unavailable');
+    return false;
+  };
 
   const fetchServices = async () => {
     try {
-      console.log('Fetching services from backend...');
+      console.log('Checking Spring Boot backend availability...');
+      const isBackendAvailable = await checkBackendHealth();
       
-      // Try Spring Boot backend first
-      const response = await fetch('http://localhost:8080/api/services');
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Services fetched from backend:', data);
-        setServices(data);
-        return;
+      if (isBackendAvailable) {
+        console.log('Fetching services from Spring Boot backend...');
+        const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/services`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Services fetched from Spring Boot backend:', data);
+          setServices(data);
+          return;
+        }
       }
-    } catch (error) {
-      console.log('Backend unavailable, trying Supabase...');
-    }
-
-    try {
+      
+      console.log('Spring Boot unavailable, trying Supabase...');
+      
       // Fallback to Supabase
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
       
       if (error) throw error;
       console.log('Services fetched from Supabase:', data);
@@ -46,32 +84,36 @@ export const useBookingData = () => {
 
   const fetchTechnicians = async () => {
     try {
-      console.log('Fetching technicians from backend...');
-      
-      // Try Spring Boot backend first
-      const response = await fetch('http://localhost:8080/api/technicians');
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Technicians fetched from backend:', data);
-        setTechnicians(data.filter((tech: any) => tech.is_available));
-        return;
+      if (backendStatus === 'available') {
+        console.log('Fetching technicians from Spring Boot backend...');
+        const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/technicians`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Technicians fetched from Spring Boot backend:', data);
+          setTechnicians(data.filter((tech: any) => tech.is_available));
+          return;
+        }
       }
-    } catch (error) {
-      console.log('Backend unavailable, trying Supabase...');
-    }
-
-    try {
+      
+      console.log('Spring Boot unavailable, trying Supabase...');
+      
       // Fallback to Supabase
       const { data, error } = await supabase
         .from('technicians')
-        .select('*');
+        .select('*')
+        .eq('is_available', true)
+        .order('name');
       
       if (error) throw error;
       
-      const availableTechnicians = data?.filter(tech => tech.is_available === true) || [];
-      console.log('Technicians fetched from Supabase:', availableTechnicians);
-      setTechnicians(availableTechnicians);
+      console.log('Technicians fetched from Supabase:', data);
+      setTechnicians(data || []);
     } catch (error) {
       console.log('Supabase unavailable, using local data:', error);
       // Final fallback to local JSON
@@ -95,6 +137,32 @@ export const useBookingData = () => {
         selectedTechnician 
       });
       
+      // Try Spring Boot backend first if available
+      if (backendStatus === 'available') {
+        try {
+          const response = await fetch(
+            `${SPRING_BOOT_BASE_URL}/api/appointments/slots?` +
+            `technicianId=${selectedTechnician}&startDate=${startDate}&endDate=${endDate}`,
+            {
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Monthly booked slots from Spring Boot:', data);
+            setMonthlyBookedData(data.bookedSlots || {});
+            return;
+          }
+        } catch (error) {
+          console.log('Spring Boot slots fetch failed, falling back to Supabase:', error);
+        }
+      }
+      
+      // Fallback to Supabase
       const { data, error } = await supabase
         .from('appointments')
         .select('appointment_date, appointment_time, status')
@@ -126,7 +194,7 @@ export const useBookingData = () => {
     } finally {
       setIsFetchingSlots(false);
     }
-  }, []);
+  }, [backendStatus]);
 
   const refreshBookedSlots = useCallback(async (month?: Date, selectedTechnician?: string) => {
     if (month && selectedTechnician) {
@@ -154,6 +222,7 @@ export const useBookingData = () => {
     technicians,
     monthlyBookedData,
     isFetchingSlots,
+    backendStatus,
     fetchMonthlyBookedData,
     clearBookedSlots,
     refreshBookedSlots

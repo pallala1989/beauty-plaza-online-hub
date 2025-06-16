@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { validateEmail, sanitizeInput } from "@/utils/inputValidation";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({});
   
   const navigate = useNavigate();
   const { signIn, user, isLoading: authLoading } = useAuth();
@@ -25,11 +27,38 @@ const Login = () => {
     }
   }, [user, authLoading, navigate]);
 
+  const validateForm = () => {
+    const errors: {email?: string; password?: string} = {};
+    
+    if (!formData.email) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
 
-    const { error } = await signIn(formData.email, formData.password);
+    const { error } = await signIn(
+      sanitizeInput(formData.email),
+      formData.password
+    );
     
     if (!error) {
       navigate("/");
@@ -39,10 +68,19 @@ const Login = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[name as keyof typeof validationErrors]) {
+      setValidationErrors({
+        ...validationErrors,
+        [name]: undefined
+      });
+    }
   };
 
   if (authLoading) {
@@ -82,7 +120,11 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="your.email@example.com"
                   required
+                  className={validationErrors.email ? "border-red-500" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                )}
               </div>
 
               <div>
@@ -96,6 +138,7 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="Enter your password"
                     required
+                    className={validationErrors.password ? "border-red-500" : ""}
                   />
                   <Button
                     type="button"
@@ -110,16 +153,9 @@ const Login = () => {
                     )}
                   </Button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input type="checkbox" className="rounded border-gray-300 text-pink-600 shadow-sm focus:border-pink-300 focus:ring focus:ring-pink-200 focus:ring-opacity-50" />
-                  <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                </label>
-                <Link to="/forgot-password" className="text-sm text-pink-600 hover:text-pink-500">
-                  Forgot password?
-                </Link>
+                {validationErrors.password && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.password}</p>
+                )}
               </div>
 
               <Button
@@ -142,13 +178,13 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Access for Demo */}
+        {/* Demo Credentials Info */}
         <Card className="mt-4">
           <CardContent className="pt-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Quick Access (Demo)</h3>
-            <div className="space-y-2 text-sm">
-              <p><strong>Customer:</strong> customer@demo.com / password123</p>
-              <p><strong>Admin:</strong> admin@demo.com / admin123</p>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Demo Access</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>For testing, you can create an account using the sign up form.</p>
+              <p>Admin access will be configured through the database.</p>
             </div>
           </CardContent>
         </Card>
