@@ -1,0 +1,27 @@
+
+[
+  {
+    "id": "1",
+    "name": "Sarah Johnson",
+    "specialties": ["Facial", "Anti-Aging"],
+    "is_available": true
+  },
+  {
+    "id": "2",
+    "name": "Emma Davis",
+    "specialties": ["Hair", "Color"],
+    "is_available": true
+  },
+  {
+    "id": "3",
+    "name": "Lisa Chen",
+    "specialties": ["Makeup", "Bridal"],
+    "is_available": true
+  },
+  {
+    "id": "4",
+    "name": "Maria Rodriguez",
+    "specialties": ["Waxing", "Nails"],
+    "is_available": true
+  }
+]

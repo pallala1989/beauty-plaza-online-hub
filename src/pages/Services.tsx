@@ -5,118 +5,41 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useServices } from "@/hooks/useServices";
 
 const Services = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { services, isLoading } = useServices();
 
   const categories = ["All", "Facial", "Hair", "Makeup", "Waxing", "Nails"];
 
-  const services = [
-    {
-      id: 1,
-      name: "Classic Facial",
-      category: "Facial",
-      description: "Deep cleansing facial with extractions and moisturizing treatment",
-      price: 75,
-      duration: "60 min",
-      image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=300&fit=crop",
-      popular: true
-    },
-    {
-      id: 2,
-      name: "Anti-Aging Facial",
-      category: "Facial",
-      description: "Rejuvenating treatment with collagen boost and peptide infusion",
-      price: 120,
-      duration: "75 min",
-      image: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400&h=300&fit=crop",
-      popular: false
-    },
-    {
-      id: 3,
-      name: "Haircut & Style",
-      category: "Hair",
-      description: "Professional cut with wash, style, and finishing",
-      price: 45,
-      duration: "45 min",
-      image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&h=300&fit=crop",
-      popular: true
-    },
-    {
-      id: 4,
-      name: "Hair Color",
-      category: "Hair",
-      description: "Full color service with professional consultation",
-      price: 85,
-      duration: "120 min",
-      image: "https://images.unsplash.com/photo-1560869713-7d0954430927?w=400&h=300&fit=crop",
-      popular: false
-    },
-    {
-      id: 5,
-      name: "Bridal Makeup",
-      category: "Makeup",
-      description: "Complete bridal makeup with trial session included",
-      price: 150,
-      duration: "90 min",
-      image: "https://images.unsplash.com/photo-1487412912498-0447578fcca8?w=400&h=300&fit=crop",
-      popular: true
-    },
-    {
-      id: 6,
-      name: "Special Event Makeup",
-      category: "Makeup",
-      description: "Professional makeup for parties and special occasions",
-      price: 60,
-      duration: "45 min",
-      image: "https://images.unsplash.com/photo-1498950608760-8d97161f8c1c?w=400&h=300&fit=crop",
-      popular: false
-    },
-    {
-      id: 7,
-      name: "Eyebrow Waxing",
-      category: "Waxing",
-      description: "Precise eyebrow shaping and grooming",
-      price: 25,
-      duration: "20 min",
-      image: "https://images.unsplash.com/photo-1519415943484-9fa1873496d4?w=400&h=300&fit=crop",
-      popular: true
-    },
-    {
-      id: 8,
-      name: "Full Leg Waxing",
-      category: "Waxing",
-      description: "Complete leg hair removal with soothing after-care",
-      price: 65,
-      duration: "45 min",
-      image: "https://images.unsplash.com/photo-1610899922902-99a4b4c5b1b7?w=400&h=300&fit=crop",
-      popular: false
-    },
-    {
-      id: 9,
-      name: "Manicure",
-      category: "Nails",
-      description: "Classic manicure with nail shaping and polish",
-      price: 35,
-      duration: "30 min",
-      image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&h=300&fit=crop",
-      popular: true
-    },
-    {
-      id: 10,
-      name: "Gel Manicure",
-      category: "Nails",
-      description: "Long-lasting gel polish with UV curing",
-      price: 45,
-      duration: "45 min",
-      image: "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=400&h=300&fit=crop",
-      popular: false
-    }
-  ];
+  // Map services to include category based on name
+  const servicesWithCategory = services.map(service => ({
+    ...service,
+    category: service.name.toLowerCase().includes('facial') ? 'Facial' :
+              service.name.toLowerCase().includes('hair') ? 'Hair' :
+              service.name.toLowerCase().includes('makeup') ? 'Makeup' :
+              service.name.toLowerCase().includes('wax') || service.name.toLowerCase().includes('eyebrow') ? 'Waxing' :
+              service.name.toLowerCase().includes('manicure') || service.name.toLowerCase().includes('nail') ? 'Nails' : 'Other',
+    popular: ['1', '3', '5', '7', '9'].includes(service.id) // Mark some as popular
+  }));
 
   const filteredServices = selectedCategory === "All" 
-    ? services 
-    : services.filter(service => service.category === selectedCategory);
+    ? servicesWithCategory 
+    : servicesWithCategory.filter(service => service.category === selectedCategory);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading services...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -154,7 +77,7 @@ const Services = () => {
             <Card key={service.id} className="group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <div className="relative overflow-hidden rounded-t-lg">
                 <img 
-                  src={service.image} 
+                  src={service.image_url} 
                   alt={service.name}
                   className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                 />
@@ -171,7 +94,7 @@ const Services = () => {
                   <div>
                     <CardTitle className="text-xl">{service.name}</CardTitle>
                     <CardDescription className="text-sm text-gray-500">
-                      {service.duration}
+                      {service.duration} min
                     </CardDescription>
                   </div>
                   <div className="text-right">

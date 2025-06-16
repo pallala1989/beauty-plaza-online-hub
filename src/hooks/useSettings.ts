@@ -14,17 +14,44 @@ interface Settings {
   contact_address_line2?: string;
 }
 
+const defaultSettings: Settings = {
+  service_prices: { facial: 75, haircut: 50, manicure: 35, pedicure: 45 },
+  referral_amounts: { referrer_credit: 10, referred_discount: 10 },
+  loyalty_settings: { points_per_dollar: 10, min_redemption: 100, redemption_rate: 10 },
+  in_home_fee: 25,
+  loyalty_tiers: { bronze: 0, silver: 500, gold: 1000, platinum: 2000 },
+  contact_phone: '(903) 921-0271',
+  contact_email: 'info@beautyplaza.com',
+  contact_address_line1: '2604 Jacqueline Dr',
+  contact_address_line2: 'Wilmington, DE - 19810'
+};
+
 export const useSettings = () => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSettings = async () => {
     try {
-      // Use rpc call to fetch settings with type assertion
+      console.log('Fetching settings from backend...');
+      
+      // Try Spring Boot backend first
+      const response = await fetch('http://localhost:8080/api/admin/settings');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Settings fetched from backend:', data);
+        setSettings(data);
+        return;
+      }
+    } catch (error) {
+      console.log('Backend unavailable, trying Supabase...');
+    }
+
+    try {
+      // Fallback to Supabase
       const { data, error } = await (supabase as any).rpc('get_settings');
       
       if (error) {
-        // Fallback to direct query with type assertion
         const { data: fallbackData, error: fallbackError } = await (supabase as any)
           .from('settings')
           .select('key, value');
@@ -41,19 +68,9 @@ export const useSettings = () => {
         setSettings(data);
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
-      // Set default values if fetch fails
-      setSettings({
-        service_prices: { facial: 75, haircut: 50, manicure: 35, pedicure: 45 },
-        referral_amounts: { referrer_credit: 10, referred_discount: 10 },
-        loyalty_settings: { points_per_dollar: 10, min_redemption: 100, redemption_rate: 10 },
-        in_home_fee: 25,
-        loyalty_tiers: { bronze: 0, silver: 500, gold: 1000, platinum: 2000 },
-        contact_phone: '(903) 921-0271',
-        contact_email: 'info@beautyplaza.com',
-        contact_address_line1: '2604 Jacqueline Dr',
-        contact_address_line2: 'Wilmington, DE - 19810'
-      });
+      console.log('Supabase unavailable, using default settings:', error);
+      // Final fallback to default settings
+      setSettings(defaultSettings);
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +78,23 @@ export const useSettings = () => {
 
   const updateSetting = async (key: string, value: any) => {
     try {
-      // Use type assertion to bypass TypeScript checking
+      // Try backend first
+      const response = await fetch(`http://localhost:8080/api/admin/settings/${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value })
+      });
+
+      if (response.ok) {
+        await fetchSettings();
+        return;
+      }
+    } catch (error) {
+      console.log('Backend unavailable, trying Supabase...');
+    }
+
+    try {
+      // Fallback to Supabase
       const { data, error } = await (supabase as any)
         .from('settings')
         .update({ value })
@@ -76,7 +109,6 @@ export const useSettings = () => {
         if (upsertError) throw upsertError;
       }
       
-      // Refresh settings
       await fetchSettings();
     } catch (error) {
       console.error('Error updating setting:', error);

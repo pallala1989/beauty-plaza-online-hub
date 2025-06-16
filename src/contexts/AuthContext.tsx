@@ -57,14 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetching
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
@@ -76,7 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -93,6 +90,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      
+      // Check for default admin credentials
+      if (email === 'admin' && password === 'admin') {
+        // Create a mock admin session
+        const mockAdminProfile: Profile = {
+          id: 'admin-user-id',
+          email: 'admin@beautyplaza.com',
+          full_name: 'Admin User',
+          role: 'admin'
+        };
+        
+        setProfile(mockAdminProfile);
+        setUser({
+          id: 'admin-user-id',
+          email: 'admin@beautyplaza.com',
+          created_at: new Date().toISOString(),
+          app_metadata: {},
+          user_metadata: {},
+          aud: 'authenticated'
+        } as User);
+
+        toast({
+          title: "Welcome Admin!",
+          description: "You have successfully signed in as admin.",
+        });
+
+        return { error: null };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -154,6 +180,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      // Handle admin logout
+      if (profile?.role === 'admin' && user?.id === 'admin-user-id') {
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+        
+        toast({
+          title: "Signed out successfully",
+          description: "You have been logged out.",
+        });
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -176,6 +215,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error('No user logged in') };
+
+    // Skip profile update for admin user
+    if (user.id === 'admin-user-id') {
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      return { error: null };
+    }
 
     try {
       const { data, error } = await supabase

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import servicesData from '@/data/services.json';
+import techniciansData from '@/data/technicians.json';
 
 export const useBookingData = () => {
   const [services, setServices] = useState<any[]>([]);
@@ -10,52 +12,70 @@ export const useBookingData = () => {
 
   const fetchServices = async () => {
     try {
-      console.log('Fetching services...');
+      console.log('Fetching services from backend...');
+      
+      // Try Spring Boot backend first
+      const response = await fetch('http://localhost:8080/api/services');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Services fetched from backend:', data);
+        setServices(data);
+        return;
+      }
+    } catch (error) {
+      console.log('Backend unavailable, trying Supabase...');
+    }
+
+    try {
+      // Fallback to Supabase
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true);
       
-      if (error) {
-        console.error('Error fetching services:', error);
-        throw error;
-      }
-      console.log('Services fetched successfully:', data);
+      if (error) throw error;
+      console.log('Services fetched from Supabase:', data);
       setServices(data || []);
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.log('Supabase unavailable, using local data:', error);
+      // Final fallback to local JSON
+      setServices(servicesData);
     }
   };
 
   const fetchTechnicians = async () => {
     try {
-      console.log('Fetching technicians...');
+      console.log('Fetching technicians from backend...');
       
-      const { data, error, count } = await supabase
-        .from('technicians')
-        .select('*', { count: 'exact' });
+      // Try Spring Boot backend first
+      const response = await fetch('http://localhost:8080/api/technicians');
       
-      if (error) {
-        console.error('Error fetching technicians:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Technicians fetched from backend:', data);
+        setTechnicians(data.filter((tech: any) => tech.is_available));
+        return;
       }
+    } catch (error) {
+      console.log('Backend unavailable, trying Supabase...');
+    }
+
+    try {
+      // Fallback to Supabase
+      const { data, error } = await supabase
+        .from('technicians')
+        .select('*');
       
-      console.log('Raw technicians data:', data);
-      console.log('Technicians count:', count);
+      if (error) throw error;
       
       const availableTechnicians = data?.filter(tech => tech.is_available === true) || [];
-      console.log('Available technicians:', availableTechnicians);
-      
+      console.log('Technicians fetched from Supabase:', availableTechnicians);
       setTechnicians(availableTechnicians);
     } catch (error) {
-      console.error('Error in fetchTechnicians:', error);
-      setTechnicians([]);
+      console.log('Supabase unavailable, using local data:', error);
+      // Final fallback to local JSON
+      setTechnicians(techniciansData.filter(tech => tech.is_available));
     }
   };
 

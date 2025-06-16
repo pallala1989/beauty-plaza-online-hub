@@ -1,0 +1,93 @@
+
+[
+  {
+    "id": "1",
+    "name": "Classic Facial",
+    "description": "Deep cleansing facial with extractions and moisturizing treatment",
+    "price": 75,
+    "duration": 60,
+    "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "2",
+    "name": "Anti-Aging Facial",
+    "description": "Rejuvenating treatment with collagen boost and peptide infusion",
+    "price": 120,
+    "duration": 75,
+    "image_url": "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "3",
+    "name": "Haircut & Style",
+    "description": "Professional cut with wash, style, and finishing",
+    "price": 45,
+    "duration": 45,
+    "image_url": "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "4",
+    "name": "Hair Color",
+    "description": "Full color service with professional consultation",
+    "price": 85,
+    "duration": 120,
+    "image_url": "https://images.unsplash.com/photo-1560869713-7d0954430927?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "5",
+    "name": "Bridal Makeup",
+    "description": "Complete bridal makeup with trial session included",
+    "price": 150,
+    "duration": 90,
+    "image_url": "https://images.unsplash.com/photo-1487412912498-0447578fcca8?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "6",
+    "name": "Special Event Makeup",
+    "description": "Professional makeup for parties and special occasions",
+    "price": 60,
+    "duration": 45,
+    "image_url": "https://images.unsplash.com/photo-1498950608760-8d97161f8c1c?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "7",
+    "name": "Eyebrow Waxing",
+    "description": "Precise eyebrow shaping and grooming",
+    "price": 25,
+    "duration": 20,
+    "image_url": "https://images.unsplash.com/photo-1519415943484-9fa1873496d4?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "8",
+    "name": "Full Leg Waxing",
+    "description": "Complete leg hair removal with soothing after-care",
+    "price": 65,
+    "duration": 45,
+    "image_url": "https://images.unsplash.com/photo-1610899922902-99a4b4c5b1b7?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "9",
+    "name": "Manicure",
+    "description": "Classic manicure with nail shaping and polish",
+    "price": 35,
+    "duration": 30,
+    "image_url": "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&h=300&fit=crop",
+    "is_active": true
+  },
+  {
+    "id": "10",
+    "name": "Gel Manicure",
+    "description": "Long-lasting gel polish with UV curing",
+    "price": 45,
+    "duration": 45,
+    "image_url": "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=400&h=300&fit=crop",
+    "is_active": true
+  }
+]
