@@ -1,7 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppointmentWithDetails {
   id: string;
@@ -35,19 +35,57 @@ export const useAppointments = () => {
     try {
       console.log('Fetching appointments for user:', user.id);
       
-      const response = await fetch(`${API_BASE_URL}/appointments/customer/${user.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch appointments. The backend might be offline.');
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          appointment_date,
+          appointment_time,
+          status,
+          total_amount,
+          service_type,
+          notes,
+          services:service_id (
+            name,
+            price
+          ),
+          technicians:technician_id (
+            name
+          )
+        `)
+        .eq('customer_id', user.id)
+        .order('appointment_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        setError(error.message);
+        return;
       }
-      const data = await response.json();
 
       console.log('Fetched appointments:', data);
       
-      setAppointments(data || []);
+      // Transform the data to match our interface
+      const transformedData = data?.map(appointment => ({
+        id: appointment.id,
+        appointment_date: appointment.appointment_date,
+        appointment_time: appointment.appointment_time,
+        status: appointment.status,
+        total_amount: appointment.total_amount || 0,
+        service_type: appointment.service_type || 'in-store',
+        notes: appointment.notes,
+        service: {
+          name: appointment.services?.name || 'Unknown Service',
+          price: appointment.services?.price || 0
+        },
+        technician: {
+          name: appointment.technicians?.name || 'Unknown Technician'
+        }
+      })) || [];
+
+      setAppointments(transformedData);
     } catch (error: any) {
       console.error('Error in fetchAppointments:', error);
       setError(error.message);
-      setAppointments([]); // Fallback to empty list
     } finally {
       setIsLoading(false);
     }

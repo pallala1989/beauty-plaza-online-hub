@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Settings {
   service_prices: Record<string, number>;
@@ -20,12 +20,26 @@ export const useSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`);
-      if (!response.ok) {
-        throw new Error('Backend not available');
+      // Use rpc call to fetch settings with type assertion
+      const { data, error } = await (supabase as any).rpc('get_settings');
+      
+      if (error) {
+        // Fallback to direct query with type assertion
+        const { data: fallbackData, error: fallbackError } = await (supabase as any)
+          .from('settings')
+          .select('key, value');
+        
+        if (fallbackError) throw fallbackError;
+        
+        const settingsMap: any = {};
+        fallbackData?.forEach((setting: any) => {
+          settingsMap[setting.key] = setting.value;
+        });
+        
+        setSettings(settingsMap);
+      } else {
+        setSettings(data);
       }
-      const data = await response.json();
-      setSettings(data);
     } catch (error) {
       console.error('Error fetching settings:', error);
       // Set default values if fetch fails
@@ -47,15 +61,19 @@ export const useSettings = () => {
 
   const updateSetting = async (key: string, value: any) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/settings/${key}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ value }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update setting');
+      // Use type assertion to bypass TypeScript checking
+      const { data, error } = await (supabase as any)
+        .from('settings')
+        .update({ value })
+        .eq('key', key)
+        .select()
+        .single();
+      
+      if (error || !data) {
+        const { error: upsertError } = await (supabase as any)
+          .from('settings')
+          .upsert({ key, value });
+        if (upsertError) throw upsertError;
       }
       
       // Refresh settings
