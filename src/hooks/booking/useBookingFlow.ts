@@ -12,7 +12,16 @@ const timeSlots = [
 ];
 
 export const useBookingFlow = () => {
-  const { services, technicians, monthlyBookedData, isFetchingSlots, fetchMonthlyBookedData, clearBookedSlots, refreshBookedSlots } = useBookingData();
+  const { 
+    services, 
+    beautyservices,
+    technicians, 
+    monthlyBookedData, 
+    isFetchingSlots, 
+    fetchMonthlyBookedData, 
+    clearBookedSlots, 
+    refreshBookedSlots 
+  } = useBookingData();
   
   const {
     step,
@@ -102,15 +111,15 @@ export const useBookingFlow = () => {
   }, [monthlyBookedData]);
 
   useEffect(() => {
-    if (selectedTechnician) {
+    if (selectedTechnician && fetchMonthlyBookedData) {
       fetchMonthlyBookedData(currentMonth, selectedTechnician);
-    } else {
+    } else if (clearBookedSlots) {
       clearBookedSlots();
     }
   }, [selectedTechnician, currentMonth, fetchMonthlyBookedData, clearBookedSlots]);
 
   useEffect(() => {
-    if (selectedTechnician && step === 3) {
+    if (selectedTechnician && step === 3 && fetchMonthlyBookedData) {
       const interval = setInterval(() => {
         console.log('Auto-refreshing monthly booked slots...');
         fetchMonthlyBookedData(currentMonth, selectedTechnician);
@@ -152,6 +161,7 @@ export const useBookingFlow = () => {
     bookingDetails,
     customerInfo,
     services,
+    beautyservices,
     technicians,
     bookedSlots,
     isFetchingSlots,
