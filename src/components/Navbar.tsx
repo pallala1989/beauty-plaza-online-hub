@@ -27,7 +27,7 @@ const Navbar = () => {
   if (profile?.role === 'admin') {
     roleSpecificNavigation.push({ name: "Admin Dashboard", href: "/admin" });
   }
-  if (profile?.role === 'customer') {
+  if (profile?.role === 'user') { // Changed from 'customer' to 'user'
     roleSpecificNavigation.push({ name: "My Bookings", href: "/my-bookings" });
   }
 
@@ -81,7 +81,7 @@ const Navbar = () => {
                 <Link to="/profile">
                   <Button variant="outline" className="flex items-center">
                     <User className="w-4 h-4 mr-2" />
-                    {profile?.full_name || 'Profile'}
+                    {profile?.full_name || profile?.name || 'Profile'}
                   </Button>
                 </Link>
                 <Button 
@@ -140,7 +140,7 @@ const Navbar = () => {
                       <Link to="/profile" onClick={() => setIsOpen(false)}>
                         <Button variant="outline" className="w-full">
                           <User className="w-4 h-4 mr-2" />
-                          {profile?.full_name || 'Profile'}
+                          {profile?.full_name || profile?.name || 'Profile'}
                         </Button>
                       </Link>
                       <Button 

@@ -14,6 +14,7 @@ interface Profile {
   id: string;
   email: string;
   name?: string;
+  full_name?: string;
   phone?: string;
   role?: 'user' | 'admin';
 }
@@ -22,8 +23,9 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  isLoading: boolean; // Add this for compatibility
+  signUp: (email: string, password: string, name?: string) => Promise<{ error?: any }>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
 }
@@ -58,8 +60,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: session.user.user_metadata?.phone || session.user.phone || '',
           role: session.user.user_metadata?.role || 'user'
         };
+        const profileData: Profile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          full_name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || '',
+          role: session.user.user_metadata?.role || 'user'
+        };
         setUser(userData);
-        setProfile(userData);
+        setProfile(profileData);
       }
       setLoading(false);
     });
@@ -74,8 +84,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: session.user.user_metadata?.phone || session.user.phone || '',
           role: session.user.user_metadata?.role || 'user'
         };
+        const profileData: Profile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          full_name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || '',
+          role: session.user.user_metadata?.role || 'user'
+        };
         setUser(userData);
-        setProfile(userData);
+        setProfile(profileData);
       } else {
         setUser(null);
         setProfile(null);
@@ -98,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
 
-    if (error) throw error;
+    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -107,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password
     });
 
-    if (error) throw error;
+    return { error };
   };
 
   const signOut = async () => {
@@ -130,6 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     profile,
     loading,
+    isLoading: loading, // Add this for compatibility
     signUp,
     signIn,
     signOut,
