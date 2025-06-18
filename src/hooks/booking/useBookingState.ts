@@ -40,7 +40,8 @@ export const useBookingState = () => {
       setCustomerInfo(prev => ({
         ...prev,
         email: user.email || "",
-        name: user.name || ""
+        name: user.name || "",
+        phone: user.phone || "" // Auto-populate phone number
       }));
     }
   }, [user]);

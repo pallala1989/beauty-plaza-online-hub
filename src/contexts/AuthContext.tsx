@@ -1,254 +1,144 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { config, buildApiUrl } from '@/config/environment';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
   email: string;
   name?: string;
-  role?: string;
+  phone?: string;
+  role?: 'user' | 'admin';
 }
 
 interface Profile {
   id: string;
-  full_name?: string;
-  role?: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  role?: 'user' | 'admin';
 }
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  loading: boolean;
+  signUp: (email: string, password: string, name?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
-  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || '',
+          role: session.user.user_metadata?.role || 'user'
+        };
         setUser(userData);
-        setProfile({
-          id: userData.id,
-          full_name: userData.name,
-          role: userData.role
-        });
-      } catch (error) {
-        localStorage.removeItem('auth_user');
+        setProfile(userData);
       }
-    }
-    setIsLoading(false);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || '',
+          role: session.user.user_metadata?.role || 'user'
+        };
+        setUser(userData);
+        setProfile(userData);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    try {
-      setIsLoading(true);
-      
-      // Try Spring Boot backend first
-      try {
-        const response = await fetch(buildApiUrl('/api/auth/login'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          const user: User = {
-            id: userData.id || Date.now().toString(),
-            email: userData.email,
-            name: userData.name,
-            role: userData.role || 'user'
-          };
-          
-          const profile: Profile = {
-            id: user.id,
-            full_name: user.name,
-            role: user.role
-          };
-          
-          setUser(user);
-          setProfile(profile);
-          localStorage.setItem('auth_user', JSON.stringify(user));
-          return { error: null };
-        }
-      } catch (error) {
-        console.log('Spring Boot login failed, using local authentication');
-      }
-
-      // Fallback to local authentication
-      if (email === 'admin@beautyplaza.com' && password === 'admin123') {
-        const adminUser: User = {
-          id: 'admin-1',
-          email: 'admin@beautyplaza.com',
-          name: 'Admin User',
-          role: 'admin'
-        };
-        const adminProfile: Profile = {
-          id: adminUser.id,
-          full_name: adminUser.name,
-          role: adminUser.role
-        };
-        setUser(adminUser);
-        setProfile(adminProfile);
-        localStorage.setItem('auth_user', JSON.stringify(adminUser));
-        return { error: null };
-      } else if (email && password.length >= 6) {
-        const regularUser: User = {
-          id: Date.now().toString(),
-          email,
-          name: email.split('@')[0],
+  const signUp = async (email: string, password: string, name?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name || '',
           role: 'user'
-        };
-        const regularProfile: Profile = {
-          id: regularUser.id,
-          full_name: regularUser.name,
-          role: regularUser.role
-        };
-        setUser(regularUser);
-        setProfile(regularProfile);
-        localStorage.setItem('auth_user', JSON.stringify(regularUser));
-        return { error: null };
-      }
-
-      return { error: 'Invalid email or password' };
-    } catch (error) {
-      return { error: 'Login failed. Please try again.' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signInWithGoogle = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      
-      // Simulate Google OAuth (in real implementation, this would redirect to Google)
-      // For demo purposes, we'll create a mock Google user
-      const googleUser: User = {
-        id: `google-${Date.now()}`,
-        email: 'user@gmail.com',
-        name: 'Google User',
-        role: 'user'
-      };
-      
-      const googleProfile: Profile = {
-        id: googleUser.id,
-        full_name: googleUser.name,
-        role: googleUser.role
-      };
-      
-      setUser(googleUser);
-      setProfile(googleProfile);
-      localStorage.setItem('auth_user', JSON.stringify(googleUser));
-    } catch (error) {
-      throw new Error('Google sign-in failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signUp = async (email: string, password: string, name?: string): Promise<{ error: string | null }> => {
-    try {
-      setIsLoading(true);
-      
-      // Try Spring Boot backend first
-      try {
-        const response = await fetch(buildApiUrl('/api/auth/register'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password, name }),
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          const user: User = {
-            id: userData.id || Date.now().toString(),
-            email: userData.email,
-            name: userData.name || name,
-            role: userData.role || 'user'
-          };
-          
-          const profile: Profile = {
-            id: user.id,
-            full_name: user.name,
-            role: user.role
-          };
-          
-          setUser(user);
-          setProfile(profile);
-          localStorage.setItem('auth_user', JSON.stringify(user));
-          return { error: null };
         }
-      } catch (error) {
-        console.log('Spring Boot registration failed, using local registration');
       }
+    });
 
-      // Fallback to local registration
-      if (email && password.length >= 6) {
-        const newUser: User = {
-          id: Date.now().toString(),
-          email,
-          name: name || email.split('@')[0],
-          role: 'user'
-        };
-        const newProfile: Profile = {
-          id: newUser.id,
-          full_name: newUser.name,
-          role: newUser.role
-        };
-        setUser(newUser);
-        setProfile(newProfile);
-        localStorage.setItem('auth_user', JSON.stringify(newUser));
-        return { error: null };
-      }
-
-      return { error: 'Please provide valid email and password (min 6 characters)' };
-    } catch (error) {
-      return { error: 'Registration failed. Please try again.' };
-    } finally {
-      setIsLoading(false);
-    }
+    if (error) throw error;
   };
 
-  const signOut = () => {
-    setUser(null);
-    setProfile(null);
-    localStorage.removeItem('auth_user');
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
   };
 
-  const value = {
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      }
+    });
+
+    if (error) throw error;
+  };
+
+  const value: AuthContextType = {
     user,
     profile,
-    isLoading,
-    signIn,
-    signInWithGoogle,
+    loading,
     signUp,
+    signIn,
     signOut,
+    signInWithGoogle,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

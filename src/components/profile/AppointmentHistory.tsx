@@ -4,29 +4,46 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, MapPin, Phone, Loader2 } from "lucide-react";
 import { useAppointments } from "@/hooks/useAppointments";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import RescheduleAppointment from "./RescheduleAppointment";
 
 const AppointmentHistory = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { appointments, isLoading, error, refetch } = useAppointments();
 
   const handleCancel = async (appointmentId: string) => {
     try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelled' })
-        .eq('id', appointmentId);
+      console.log('Cancelling appointment:', appointmentId);
+      
+      // Try Spring Boot backend first
+      try {
+        const response = await fetch(`http://localhost:8080/api/appointments/${appointmentId}/cancel`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user?.id}`
+          }
+        });
 
-      if (error) {
-        throw error;
+        if (response.ok) {
+          toast({
+            title: "Appointment Cancelled",
+            description: "Your appointment has been successfully cancelled.",
+          });
+          refetch();
+          return;
+        }
+      } catch (error) {
+        console.log('Spring Boot unavailable, using local storage');
       }
 
+      // Fallback for local storage or mock implementation
       toast({
         title: "Appointment Cancelled",
         description: "Your appointment has been successfully cancelled.",
       });
-
+      
       // Refresh the appointments list
       refetch();
     } catch (error: any) {

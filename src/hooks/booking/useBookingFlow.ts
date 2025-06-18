@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useMemo } from "react";
 import { useBookingData } from "@/hooks/useBookingData";
 import { useBookingState } from "./useBookingState";
@@ -79,6 +80,14 @@ export const useBookingFlow = () => {
   );
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Auto-select first available technician when technicians are loaded
+  useEffect(() => {
+    if (technicians.length > 0 && !selectedTechnician) {
+      console.log('Auto-selecting first available technician:', technicians[0].id);
+      setSelectedTechnician(technicians[0].id);
+    }
+  }, [technicians, selectedTechnician, setSelectedTechnician]);
 
   const handleMonthChange = (month: Date) => {
     setCurrentMonth(month);
