@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AppointmentWithDetails {
   id: string;
@@ -23,7 +22,7 @@ interface AppointmentWithDetails {
 const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
 
 export const useAppointments = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,58 +56,30 @@ export const useAppointments = () => {
           return;
         }
       } catch (backendError) {
-        console.log('Spring Boot unavailable, trying Supabase:', backendError);
+        console.log('Spring Boot unavailable, using fallback data:', backendError);
       }
       
-      // Fallback to Supabase
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          appointment_date,
-          appointment_time,
-          status,
-          total_amount,
-          service_type,
-          notes,
-          services:service_id (
-            name,
-            price
-          ),
-          technicians:technician_id (
-            name
-          )
-        `)
-        .eq('customer_id', user.id)
-        .order('appointment_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching appointments:', error);
-        setError('Failed to load appointments');
-        return;
-      }
-
-      console.log('Fetched appointments from Supabase:', data);
-      
-      // Transform the data to match our interface
-      const transformedData = data?.map(appointment => ({
-        id: appointment.id,
-        appointment_date: appointment.appointment_date,
-        appointment_time: appointment.appointment_time,
-        status: appointment.status,
-        total_amount: appointment.total_amount || 0,
-        service_type: appointment.service_type || 'in-store',
-        notes: appointment.notes,
-        service: {
-          name: appointment.services?.name || 'Unknown Service',
-          price: appointment.services?.price || 0
-        },
-        technician: {
-          name: appointment.technicians?.name || 'Unknown Technician'
+      // Fallback to mock data
+      const mockAppointments: AppointmentWithDetails[] = [
+        {
+          id: '1',
+          appointment_date: '2024-01-20',
+          appointment_time: '10:00',
+          status: 'scheduled',
+          total_amount: 75,
+          service_type: 'in-store',
+          notes: 'Regular manicure',
+          service: {
+            name: 'Classic Manicure',
+            price: 75
+          },
+          technician: {
+            name: 'Sarah Johnson'
+          }
         }
-      })) || [];
+      ];
 
-      setAppointments(transformedData);
+      setAppointments(mockAppointments);
     } catch (error: any) {
       console.error('Error in fetchAppointments:', error);
       setError('Failed to load appointments');

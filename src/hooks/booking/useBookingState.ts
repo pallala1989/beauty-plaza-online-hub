@@ -40,7 +40,7 @@ export const useBookingState = () => {
       setCustomerInfo(prev => ({
         ...prev,
         email: user.email || "",
-        name: user.user_metadata?.full_name || ""
+        name: user.name || ""
       }));
     }
   }, [user]);

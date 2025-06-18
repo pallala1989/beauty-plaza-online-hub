@@ -9,8 +9,15 @@ interface User {
   role?: string;
 }
 
+interface Profile {
+  id: string;
+  full_name?: string;
+  role?: string;
+}
+
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<void>;
@@ -30,6 +37,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +45,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = localStorage.getItem('auth_user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setProfile({
+          id: userData.id,
+          full_name: userData.name,
+          role: userData.role
+        });
       } catch (error) {
         localStorage.removeItem('auth_user');
       }
@@ -68,7 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: userData.role || 'user'
           };
           
+          const profile: Profile = {
+            id: user.id,
+            full_name: user.name,
+            role: user.role
+          };
+          
           setUser(user);
+          setProfile(profile);
           localStorage.setItem('auth_user', JSON.stringify(user));
           return { error: null };
         }
@@ -84,7 +105,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: 'Admin User',
           role: 'admin'
         };
+        const adminProfile: Profile = {
+          id: adminUser.id,
+          full_name: adminUser.name,
+          role: adminUser.role
+        };
         setUser(adminUser);
+        setProfile(adminProfile);
         localStorage.setItem('auth_user', JSON.stringify(adminUser));
         return { error: null };
       } else if (email && password.length >= 6) {
@@ -94,7 +121,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: email.split('@')[0],
           role: 'user'
         };
+        const regularProfile: Profile = {
+          id: regularUser.id,
+          full_name: regularUser.name,
+          role: regularUser.role
+        };
         setUser(regularUser);
+        setProfile(regularProfile);
         localStorage.setItem('auth_user', JSON.stringify(regularUser));
         return { error: null };
       }
@@ -120,7 +153,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: 'user'
       };
       
+      const googleProfile: Profile = {
+        id: googleUser.id,
+        full_name: googleUser.name,
+        role: googleUser.role
+      };
+      
       setUser(googleUser);
+      setProfile(googleProfile);
       localStorage.setItem('auth_user', JSON.stringify(googleUser));
     } catch (error) {
       throw new Error('Google sign-in failed');
@@ -152,7 +192,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: userData.role || 'user'
           };
           
+          const profile: Profile = {
+            id: user.id,
+            full_name: user.name,
+            role: user.role
+          };
+          
           setUser(user);
+          setProfile(profile);
           localStorage.setItem('auth_user', JSON.stringify(user));
           return { error: null };
         }
@@ -168,7 +215,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: name || email.split('@')[0],
           role: 'user'
         };
+        const newProfile: Profile = {
+          id: newUser.id,
+          full_name: newUser.name,
+          role: newUser.role
+        };
         setUser(newUser);
+        setProfile(newProfile);
         localStorage.setItem('auth_user', JSON.stringify(newUser));
         return { error: null };
       }
@@ -183,11 +236,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = () => {
     setUser(null);
+    setProfile(null);
     localStorage.removeItem('auth_user');
   };
 
   const value = {
     user,
+    profile,
     isLoading,
     signIn,
     signInWithGoogle,
