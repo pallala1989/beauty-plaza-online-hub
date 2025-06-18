@@ -5,22 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Phone, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/useSettings";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
+  const { settings } = useSettings();
 
-  const navigation = [
+  // Get navigation settings with defaults
+  const navSettings = settings?.navigation_settings || {
+    show_promotions: true,
+    show_loyalty: true,
+    show_gift_cards: true,
+    show_refer_friend: true
+  };
+
+  const baseNavigation = [
     { name: "Home", href: "/" },
     { name: "Services", href: "/services" },
     { name: "Book Online", href: "/book-online" },
-    { name: "Gift Cards", href: "/gift-card" },
-    { name: "Loyalty", href: "/loyalty" },
-    { name: "Refer Friend", href: "/refer-friend" },
-    { name: "Promotions", href: "/promotions" },
     { name: "Contact", href: "/contact" },
   ];
+
+  const conditionalNavigation = [
+    ...(navSettings.show_gift_cards ? [{ name: "Gift Cards", href: "/gift-card" }] : []),
+    ...(navSettings.show_loyalty ? [{ name: "Loyalty", href: "/loyalty" }] : []),
+    ...(navSettings.show_refer_friend ? [{ name: "Refer Friend", href: "/refer-friend" }] : []),
+    ...(navSettings.show_promotions ? [{ name: "Promotions", href: "/promotions" }] : []),
+  ];
+
+  const navigation = [...baseNavigation, ...conditionalNavigation];
 
   // Add role-specific navigation
   const roleSpecificNavigation = [];

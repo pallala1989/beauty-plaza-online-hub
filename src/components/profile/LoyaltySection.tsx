@@ -1,11 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Star } from "lucide-react";
+import { Gift, Star, CreditCard, Banknote } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -18,6 +19,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   const [redeemAmount, setRedeemAmount] = useState("");
   const [currentPoints, setCurrentPoints] = useState(points);
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [redemptionMethod, setRedemptionMethod] = useState("gift_card");
   const { toast } = useToast();
   const { settings, isLoading: settingsLoading } = useSettings();
   const { user } = useAuth();
@@ -85,14 +87,40 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
         throw new Error("User not authenticated");
       }
 
+      const dollarValue = (amount / loyaltySettings.redemption_rate).toFixed(2);
+      
+      // Call backend API for redemption
+      try {
+        const response = await fetch('http://localhost:8080/api/loyalty/redeem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.access_token || 'demo-token'}`
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            points: amount,
+            redemptionMethod: redemptionMethod,
+            dollarValue: parseFloat(dollarValue)
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Points redeemed via backend:', result);
+        } else {
+          throw new Error('Backend redemption failed');
+        }
+      } catch (backendError) {
+        console.log('Backend unavailable, using local simulation');
+      }
+      
       // Simulate points redemption with local storage for demo
       const newPoints = currentPoints - amount;
       
       // Store user points in localStorage for demo
       const userPointsKey = `user_points_${user.id}`;
       localStorage.setItem(userPointsKey, newPoints.toString());
-
-      const dollarValue = (amount / loyaltySettings.redemption_rate).toFixed(2);
       
       // Update local state
       setCurrentPoints(newPoints);
@@ -102,9 +130,11 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
         onRedeemPoints(amount);
       }
       
+      const redemptionMethodText = redemptionMethod === 'gift_card' ? 'gift card' : 'bank account credit';
+      
       toast({
         title: "Points Redeemed!",
-        description: `${amount} points redeemed for $${dollarValue} credit.`,
+        description: `${amount} points redeemed for $${dollarValue} as ${redemptionMethodText}.`,
       });
       
       setRedeemAmount("");
@@ -204,11 +234,12 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <label className="text-sm font-medium text-gray-700">
             Redeem Points ({loyaltySettings.min_redemption} points minimum = ${(loyaltySettings.min_redemption / loyaltySettings.redemption_rate).toFixed(2)})
           </label>
-          <div className="flex space-x-2">
+          
+          <div className="space-y-3">
             <Input
               type="number"
               placeholder="Enter points"
@@ -219,19 +250,49 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
               max={currentPoints}
               disabled={isRedeeming}
             />
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Redemption Method</Label>
+              <RadioGroup
+                value={redemptionMethod}
+                onValueChange={setRedemptionMethod}
+                disabled={isRedeeming}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="gift_card" id="gift_card" />
+                  <Label htmlFor="gift_card" className="flex items-center cursor-pointer">
+                    <Gift className="w-4 h-4 mr-2 text-pink-600" />
+                    Send as Gift Card
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="bank_credit" id="bank_credit" />
+                  <Label htmlFor="bank_credit" className="flex items-center cursor-pointer">
+                    <Banknote className="w-4 h-4 mr-2 text-green-600" />
+                    Credit to Bank Account
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <Button
               onClick={handleRedeem}
               disabled={isRedeemDisabled()}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               type="button"
             >
-              <Gift className="w-4 h-4 mr-2" />
-              {isRedeeming ? "Redeeming..." : "Redeem"}
+              {redemptionMethod === 'gift_card' ? (
+                <Gift className="w-4 h-4 mr-2" />
+              ) : (
+                <CreditCard className="w-4 h-4 mr-2" />
+              )}
+              {isRedeeming ? "Processing..." : `Redeem as ${redemptionMethod === 'gift_card' ? 'Gift Card' : 'Bank Credit'}`}
             </Button>
           </div>
+          
           {redeemAmount && parseInt(redeemAmount) >= loyaltySettings.min_redemption && parseInt(redeemAmount) <= currentPoints && (
-            <div className="text-sm text-green-600">
-              = ${(parseInt(redeemAmount) / loyaltySettings.redemption_rate).toFixed(2)} credit
+            <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+              = ${(parseInt(redeemAmount) / loyaltySettings.redemption_rate).toFixed(2)} {redemptionMethod === 'gift_card' ? 'gift card' : 'bank credit'}
             </div>
           )}
         </div>

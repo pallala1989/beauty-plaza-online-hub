@@ -12,6 +12,12 @@ interface Settings {
   contact_email?: string;
   contact_address_line1?: string;
   contact_address_line2?: string;
+  navigation_settings?: {
+    show_promotions: boolean;
+    show_loyalty: boolean;
+    show_gift_cards: boolean;
+    show_refer_friend: boolean;
+  };
 }
 
 const defaultSettings: Settings = {
@@ -23,7 +29,13 @@ const defaultSettings: Settings = {
   contact_phone: '(903) 921-0271',
   contact_email: 'info@beautyplaza.com',
   contact_address_line1: '2604 Jacqueline Dr',
-  contact_address_line2: 'Wilmington, DE - 19810'
+  contact_address_line2: 'Wilmington, DE - 19810',
+  navigation_settings: {
+    show_promotions: true,
+    show_loyalty: true,
+    show_gift_cards: true,
+    show_refer_friend: true
+  }
 };
 
 export const useSettings = () => {

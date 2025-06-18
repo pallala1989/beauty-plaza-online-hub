@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Settings, DollarSign, Gift, Users, Award, Contact } from "lucide-react";
+import { Settings, DollarSign, Gift, Users, Award, Contact, Navigation } from "lucide-react";
 
 const AdminSettings = () => {
   const { user, profile } = useAuth();
@@ -36,6 +37,12 @@ const AdminSettings = () => {
   const [contactEmail, setContactEmail] = useState("");
   const [contactAddress1, setContactAddress1] = useState("");
   const [contactAddress2, setContactAddress2] = useState("");
+  const [navigationSettings, setNavigationSettings] = useState({
+    show_promotions: true,
+    show_loyalty: true,
+    show_gift_cards: true,
+    show_refer_friend: true
+  });
 
   useEffect(() => {
     // Debugging for admin role
@@ -50,6 +57,12 @@ const AdminSettings = () => {
       setContactEmail(settings.contact_email || "");
       setContactAddress1(settings.contact_address_line1 || "");
       setContactAddress2(settings.contact_address_line2 || "");
+      setNavigationSettings(settings.navigation_settings || {
+        show_promotions: true,
+        show_loyalty: true,
+        show_gift_cards: true,
+        show_refer_friend: true
+      });
     }
   }, [settings, user, profile]);
 
@@ -70,6 +83,7 @@ const AdminSettings = () => {
         updateSetting('contact_email', contactEmail),
         updateSetting('contact_address_line1', contactAddress1),
         updateSetting('contact_address_line2', contactAddress2),
+        updateSetting('navigation_settings', navigationSettings),
       ]);
 
       toast({
@@ -109,8 +123,65 @@ const AdminSettings = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Navigation Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Navigation className="w-5 h-5 mr-2 text-blue-600" />
+                Navigation Settings
+              </CardTitle>
+              <CardDescription>Control which menu items are visible to users</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show_promotions">Show Promotions</Label>
+                <Switch
+                  id="show_promotions"
+                  checked={navigationSettings.show_promotions}
+                  onCheckedChange={(checked) => setNavigationSettings(prev => ({
+                    ...prev,
+                    show_promotions: checked
+                  }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show_loyalty">Show Loyalty Program</Label>
+                <Switch
+                  id="show_loyalty"
+                  checked={navigationSettings.show_loyalty}
+                  onCheckedChange={(checked) => setNavigationSettings(prev => ({
+                    ...prev,
+                    show_loyalty: checked
+                  }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show_gift_cards">Show Gift Cards</Label>
+                <Switch
+                  id="show_gift_cards"
+                  checked={navigationSettings.show_gift_cards}
+                  onCheckedChange={(checked) => setNavigationSettings(prev => ({
+                    ...prev,
+                    show_gift_cards: checked
+                  }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show_refer_friend">Show Refer Friend</Label>
+                <Switch
+                  id="show_refer_friend"
+                  checked={navigationSettings.show_refer_friend}
+                  onCheckedChange={(checked) => setNavigationSettings(prev => ({
+                    ...prev,
+                    show_refer_friend: checked
+                  }))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Contact Settings */}
-          <Card className="lg:col-span-2">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Contact className="w-5 h-5 mr-2 text-blue-600" />
@@ -118,7 +189,7 @@ const AdminSettings = () => {
               </CardTitle>
               <CardDescription>Update public contact details for the website</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 gap-4">
               <div>
                 <Label htmlFor="contact_phone">Contact Phone</Label>
                 <Input

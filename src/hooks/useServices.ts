@@ -14,12 +14,38 @@ interface Service {
 }
 
 const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
+const SERVICES_CACHE_KEY = 'services_cache';
+const CACHE_EXPIRY_KEY = 'services_cache_expiry';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 export const useServices = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<'spring-boot' | 'supabase' | 'local'>('local');
+  const [dataSource, setDataSource] = useState<'spring-boot' | 'supabase' | 'local' | 'cache'>('local');
+
+  const getCachedServices = (): Service[] | null => {
+    try {
+      const cached = localStorage.getItem(SERVICES_CACHE_KEY);
+      const expiry = localStorage.getItem(CACHE_EXPIRY_KEY);
+      
+      if (cached && expiry && Date.now() < parseInt(expiry)) {
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      console.log('Cache retrieval failed:', error);
+    }
+    return null;
+  };
+
+  const setCachedServices = (servicesData: Service[]) => {
+    try {
+      localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(servicesData));
+      localStorage.setItem(CACHE_EXPIRY_KEY, (Date.now() + CACHE_DURATION).toString());
+    } catch (error) {
+      console.log('Cache storage failed:', error);
+    }
+  };
 
   const checkBackendHealth = async (): Promise<boolean> => {
     try {
@@ -47,6 +73,16 @@ export const useServices = () => {
       setIsLoading(true);
       setError(null);
       
+      // Check cache first
+      const cachedServices = getCachedServices();
+      if (cachedServices) {
+        console.log('Services loaded from cache');
+        setServices(cachedServices);
+        setDataSource('cache');
+        setIsLoading(false);
+        return;
+      }
+      
       console.log('Attempting to fetch services from Spring Boot backend...');
       
       // Try Spring Boot backend first
@@ -65,6 +101,7 @@ export const useServices = () => {
             const data = await response.json();
             console.log('Services fetched from Spring Boot backend:', data);
             setServices(data);
+            setCachedServices(data);
             setDataSource('spring-boot');
             return;
           }
@@ -86,7 +123,9 @@ export const useServices = () => {
         if (error) throw error;
         
         console.log('Services fetched from Supabase:', data);
-        setServices(data || []);
+        const supabaseServices = data || [];
+        setServices(supabaseServices);
+        setCachedServices(supabaseServices);
         setDataSource('supabase');
         return;
       } catch (supabaseError) {
@@ -96,6 +135,7 @@ export const useServices = () => {
       // Final fallback to local JSON data
       console.log('Using local services data as fallback');
       setServices(servicesData);
+      setCachedServices(servicesData);
       setDataSource('local');
       
     } catch (error: any) {
@@ -110,6 +150,11 @@ export const useServices = () => {
     }
   };
 
+  const clearCache = () => {
+    localStorage.removeItem(SERVICES_CACHE_KEY);
+    localStorage.removeItem(CACHE_EXPIRY_KEY);
+  };
+
   useEffect(() => {
     fetchServices();
   }, []);
@@ -119,6 +164,7 @@ export const useServices = () => {
     isLoading,
     error,
     dataSource,
-    refetch: fetchServices
+    refetch: fetchServices,
+    clearCache
   };
 };
