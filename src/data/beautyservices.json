@@ -1,0 +1,103 @@
+
+[
+  {
+    "id": "1",
+    "name": "Classic Facial",
+    "description": "A deep cleansing facial that includes steaming, exfoliation, and moisturizing for all skin types.",
+    "price": 75,
+    "duration": 60,
+    "category": "facial",
+    "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+    "available": true
+  },
+  {
+    "id": "2",
+    "name": "Anti-Aging Facial",
+    "description": "Advanced facial treatment targeting fine lines and wrinkles with premium anti-aging products.",
+    "price": 120,
+    "duration": 75,
+    "category": "facial",
+    "image_url": "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+    "available": true
+  },
+  {
+    "id": "3",
+    "name": "Hair Cut & Style",
+    "description": "Professional haircut with styling, including wash, cut, and blow-dry.",
+    "price": 85,
+    "duration": 90,
+    "category": "hair",
+    "image_url": "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80",
+    "available": true
+  },
+  {
+    "id": "4",
+    "name": "Hair Color",
+    "description": "Full hair coloring service with consultation and professional color application.",
+    "price": 150,
+    "duration": 180,
+    "category": "hair",
+    "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80",
+    "available": true
+  },
+  {
+    "id": "5",
+    "name": "Bridal Makeup",
+    "description": "Complete bridal makeup package including trial session and wedding day application.",
+    "price": 200,
+    "duration": 120,
+    "category": "makeup",
+    "image_url": "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80",
+    "available": true
+  },
+  {
+    "id": "6",
+    "name": "Special Event Makeup",
+    "description": "Professional makeup application for special events and photoshoots.",
+    "price": 90,
+    "duration": 60,
+    "category": "makeup",
+    "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80",
+    "available": true
+  },
+  {
+    "id": "7",
+    "name": "Eyebrow Waxing",
+    "description": "Professional eyebrow shaping and waxing for perfectly sculpted brows.",
+    "price": 25,
+    "duration": 30,
+    "category": "waxing",
+    "image_url": "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+    "available": true
+  },
+  {
+    "id": "8",
+    "name": "Full Body Waxing",
+    "description": "Complete body waxing service for smooth, hair-free skin.",
+    "price": 180,
+    "duration": 120,
+    "category": "waxing",
+    "image_url": "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+    "available": true
+  },
+  {
+    "id": "9",
+    "name": "Manicure & Pedicure",
+    "description": "Complete nail care service including cuticle care, filing, and polish application.",
+    "price": 65,
+    "duration": 75,
+    "category": "nails",
+    "image_url": "https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80",
+    "available": true
+  },
+  {
+    "id": "10",
+    "name": "Gel Nail Extensions",
+    "description": "Long-lasting gel nail extensions with your choice of color and design.",
+    "price": 95,
+    "duration": 90,
+    "category": "nails",
+    "image_url": "https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1474&q=80",
+    "available": true
+  }
+]

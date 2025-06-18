@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, Star, CreditCard, Smartphone, Wallet } from "lucide-react";
+import { Gift, Heart, Star } from "lucide-react";
+import PaymentMethodSelector from "@/components/payment/PaymentMethodSelector";
 
 const GiftCard = () => {
   const [formData, setFormData] = useState({
@@ -26,7 +26,6 @@ const GiftCard = () => {
     senderEmail: ""
   });
   const [showPayment, setShowPayment] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { toast } = useToast();
@@ -120,13 +119,12 @@ const GiftCard = () => {
     setShowPayment(true);
   };
 
-  const handlePayment = async (paymentMethod: string) => {
-    setSelectedPayment(paymentMethod);
+  const handlePaymentComplete = async (paymentData: any) => {
     setIsProcessing(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate gift card creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
         title: "Gift Card Purchased!",
@@ -143,11 +141,10 @@ const GiftCard = () => {
         message: ""
       });
       setShowPayment(false);
-      setSelectedPayment("");
     } catch (error) {
       toast({
-        title: "Payment Failed",
-        description: "There was an error processing your payment. Please try again.",
+        title: "Purchase Failed",
+        description: "There was an error creating your gift card. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -155,79 +152,15 @@ const GiftCard = () => {
     }
   };
 
-  const paymentMethods = [
-    { id: "card", name: "Credit/Debit Card", icon: CreditCard, description: "Visa, Mastercard, American Express" },
-    { id: "paypal", name: "PayPal", icon: Wallet, description: "Pay with your PayPal account" },
-    { id: "apple", name: "Apple Pay", icon: Smartphone, description: "Quick and secure payment" },
-  ];
-
   if (showPayment) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-6 h-6 mr-2 text-pink-600" />
-                Choose Payment Method
-              </CardTitle>
-              <CardDescription>
-                Complete your gift card purchase for ${formData.amount}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-pink-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Order Summary</h3>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span>Gift Card Amount:</span>
-                    <span>${formData.amount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Processing Fee:</span>
-                    <span>$0.00</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                    <span>Total:</span>
-                    <span>${formData.amount}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon;
-                  return (
-                    <Button
-                      key={method.id}
-                      onClick={() => handlePayment(method.id)}
-                      disabled={isProcessing}
-                      className="w-full justify-start h-auto p-4 border-2 border-gray-200 bg-white text-gray-900 hover:border-pink-300 hover:bg-pink-50"
-                      variant="outline"
-                    >
-                      <Icon className="w-6 h-6 mr-3 text-pink-600" />
-                      <div className="text-left">
-                        <div className="font-semibold">{method.name}</div>
-                        <div className="text-sm text-gray-500">{method.description}</div>
-                      </div>
-                      {isProcessing && selectedPayment === method.id && (
-                        <div className="ml-auto">Processing...</div>
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <Button
-                onClick={() => setShowPayment(false)}
-                variant="outline"
-                className="w-full"
-                disabled={isProcessing}
-              >
-                Back to Gift Card Details
-              </Button>
-            </CardContent>
-          </Card>
+          <PaymentMethodSelector
+            amount={formData.amount}
+            onPaymentComplete={handlePaymentComplete}
+            onBack={() => setShowPayment(false)}
+          />
         </div>
       </div>
     );
@@ -447,8 +380,9 @@ const GiftCard = () => {
                 onClick={handleProceedToPayment}
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
                 size="lg"
+                disabled={isProcessing}
               >
-                Proceed to Payment
+                {isProcessing ? "Processing..." : "Proceed to Payment"}
               </Button>
             </CardContent>
           </Card>

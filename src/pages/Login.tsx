@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { validateEmail, sanitizeInput } from "@/utils/inputValidation";
+import GoogleAuth from "@/components/auth/GoogleAuth";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -108,7 +109,19 @@ const Login = () => {
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Google Sign In */}
+            <GoogleAuth />
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">Or continue with email</span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email">Email Address</Label>
@@ -183,8 +196,8 @@ const Login = () => {
           <CardContent className="pt-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Demo Access</h3>
             <div className="space-y-2 text-sm text-gray-600">
-              <p>For testing, you can create an account using the sign up form.</p>
-              <p>Admin access will be configured through the database.</p>
+              <p><strong>Admin:</strong> admin@beautyplaza.com / admin123</p>
+              <p><strong>Or:</strong> Use Google Sign In or create any account</p>
             </div>
           </CardContent>
         </Card>

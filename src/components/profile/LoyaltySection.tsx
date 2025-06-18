@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Gift, Star } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LoyaltySectionProps {
@@ -86,28 +85,12 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
         throw new Error("User not authenticated");
       }
 
-      // Update loyalty points in database
-      const { data: loyaltyData, error: fetchError } = await supabase
-        .from('loyalty_points')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const newPoints = loyaltyData.points - amount;
-      const newTotalRedeemed = loyaltyData.total_redeemed + amount;
-
-      const { error: updateError } = await supabase
-        .from('loyalty_points')
-        .update({
-          points: newPoints,
-          total_redeemed: newTotalRedeemed,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
+      // Simulate points redemption with local storage for demo
+      const newPoints = currentPoints - amount;
+      
+      // Store user points in localStorage for demo
+      const userPointsKey = `user_points_${user.id}`;
+      localStorage.setItem(userPointsKey, newPoints.toString());
 
       const dollarValue = (amount / loyaltySettings.redemption_rate).toFixed(2);
       

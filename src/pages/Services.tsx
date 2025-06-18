@@ -21,7 +21,7 @@ const Services = () => {
               service.name.toLowerCase().includes('makeup') ? 'Makeup' :
               service.name.toLowerCase().includes('wax') || service.name.toLowerCase().includes('eyebrow') ? 'Waxing' :
               service.name.toLowerCase().includes('manicure') || service.name.toLowerCase().includes('nail') ? 'Nails' : 'Other',
-    popular: ['1', '3', '5', '7', '9'].includes(service.id) // Mark some as popular
+    popular: [1, 3, 5, 7, 9].includes(parseInt(service.id)) // Mark some as popular using integer comparison
   }));
 
   const filteredServices = selectedCategory === "All" 
@@ -129,15 +129,16 @@ const Services = () => {
                 Contact Us
               </Button>
             </Link>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-white text-white hover:bg-white hover:text-pink-600"
-              onClick={() => window.open("tel:+19039210271", "_self")}
-            >
-              <Phone className="w-4 h-4 mr-2" />
-              Call (903) 921-0271
-            </Button>
+            <a href="tel:+19039210271" className="inline-block">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white text-white hover:bg-white hover:text-pink-600"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Call (903) 921-0271
+              </Button>
+            </a>
           </div>
         </div>
       </div>
