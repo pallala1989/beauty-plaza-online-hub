@@ -98,47 +98,60 @@ export const useBookingData = () => {
 
   const fetchMonthlyBookedData = useCallback(async (month: Date, selectedTechnician: string) => {
     if (!month || !selectedTechnician) {
+      console.log('Missing month or technician, clearing booked data');
       setMonthlyBookedData({});
       return;
     }
 
     setIsFetchingSlots(true);
+    console.log('Fetching monthly booked data for:', { month: format(month, 'yyyy-MM'), selectedTechnician });
+    
     try {
       const startDate = format(startOfMonth(month), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(month), 'yyyy-MM-dd');
       
-      console.log('Fetching monthly booked slots for:', { 
-        month: format(month, 'yyyy-MM'), 
-        selectedTechnician 
-      });
-      
       // Try Spring Boot backend first if available
       if (backendStatus === 'available') {
         try {
-          const response = await fetch(
-            buildApiUrl(`${config.API_ENDPOINTS.AVAILABLE_SLOTS}?technicianId=${selectedTechnician}&startDate=${startDate}&endDate=${endDate}`),
-            {
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-              }
+          const url = buildApiUrl(`${config.API_ENDPOINTS.AVAILABLE_SLOTS}?technicianId=${selectedTechnician}&startDate=${startDate}&endDate=${endDate}`);
+          console.log('Fetching from backend URL:', url);
+          
+          const response = await fetch(url, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
             }
-          );
+          });
           
           if (response.ok) {
             const data = await response.json();
             console.log('Monthly booked slots from Spring Boot:', data);
             setMonthlyBookedData(data.bookedSlots || {});
             return;
+          } else {
+            console.log('Backend response not ok:', response.status);
           }
         } catch (error) {
           console.log('Spring Boot slots fetch failed:', error);
         }
       }
       
-      // Fallback to empty data if backend unavailable
-      console.log('Backend unavailable, using empty booked slots');
-      setMonthlyBookedData({});
+      // Generate some mock booked slots for demo purposes when backend is unavailable
+      console.log('Backend unavailable, generating mock booked slots for demo');
+      const mockBookedSlots: Record<string, string[]> = {};
+      const currentDate = new Date();
+      
+      // Add some random booked slots for the current month
+      for (let day = 1; day <= 31; day++) {
+        const dateKey = format(new Date(currentDate.getFullYear(), currentDate.getMonth(), day), 'yyyy-MM-dd');
+        if (Math.random() > 0.7) { // 30% chance of having booked slots
+          mockBookedSlots[dateKey] = [
+            '10:00', '14:00', '16:30'
+          ].slice(0, Math.floor(Math.random() * 3) + 1);
+        }
+      }
+      
+      setMonthlyBookedData(mockBookedSlots);
     } catch (error) {
       console.error('Error fetching monthly booked slots:', error);
       setMonthlyBookedData({});
@@ -155,6 +168,7 @@ export const useBookingData = () => {
   }, [fetchMonthlyBookedData]);
 
   const clearBookedSlots = useCallback(() => {
+    console.log('Clearing booked slots');
     setMonthlyBookedData({});
   }, []);
 
@@ -168,8 +182,12 @@ export const useBookingData = () => {
     console.log('Technicians state updated:', technicians);
   }, [technicians]);
 
+  useEffect(() => {
+    console.log('Monthly booked data updated:', monthlyBookedData);
+  }, [monthlyBookedData]);
+
   return {
-    services: beautyservices, // Keep this alias for backward compatibility
+    services: beautyservices,
     beautyservices,
     technicians,
     monthlyBookedData,

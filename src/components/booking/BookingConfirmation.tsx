@@ -12,8 +12,8 @@ interface BookingDetails {
   selectedDate: Date;
   appointment_time: string;
   service_duration: number;
-  service_type: string;
-  total_amount: number;
+  serviceType: string;
+  totalAmount: number;
   customer_email: string;
   customer_name: string;
   customer_info: {
@@ -43,7 +43,7 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
       duration: bookingDetails.service_duration,
       customerName: bookingDetails.customer_name,
       customerEmail: bookingDetails.customer_email,
-      serviceType: bookingDetails.service_type,
+      serviceType: bookingDetails.serviceType,
       address: bookingDetails.customer_info?.address
     };
 
@@ -80,10 +80,10 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
               {bookingDetails && format(bookingDetails.selectedDate, 'MMMM dd, yyyy')} at {bookingDetails?.appointment_time}
             </p>
             <p className="text-sm text-gray-600">
-              Service Type: {bookingDetails?.service_type === 'in-home' ? 'In-Home' : 'In-Store'}
+              Service Type: {bookingDetails?.serviceType === 'in-home' ? 'In-Home' : 'In-Store'}
             </p>
             <p className="text-lg font-bold text-pink-600">
-              Total: ${bookingDetails?.total_amount}
+              Total: ${bookingDetails?.totalAmount?.toFixed(2) || '0.00'}
             </p>
             <p className="text-sm text-gray-500 mt-4">
               A confirmation email has been sent to {bookingDetails?.customer_email}
