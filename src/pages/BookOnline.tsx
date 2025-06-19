@@ -1,3 +1,4 @@
+
 import React from "react";
 import BookingProgressIndicator from "@/components/booking/BookingProgressIndicator";
 import BookingFlow from "@/components/booking/BookingFlow";
@@ -19,6 +20,7 @@ const BookOnline = () => {
     showConfirmation,
     bookingDetails,
     customerInfo,
+    loyaltyPointsToUse,
     services,
     technicians,
     bookedSlots,
@@ -31,6 +33,7 @@ const BookOnline = () => {
     setServiceType,
     setOtp,
     setCustomerInfo,
+    setLoyaltyPointsToUse,
     handleNext,
     handleBack,
     sendOtp,
@@ -82,6 +85,7 @@ const BookOnline = () => {
           selectedDate={selectedDate}
           selectedTime={selectedTime}
           customerInfo={customerInfo}
+          loyaltyPointsToUse={loyaltyPointsToUse}
           otp={otp}
           otpSent={otpSent}
           onServiceSelect={setSelectedService}
@@ -95,6 +99,7 @@ const BookOnline = () => {
           onSendOtp={sendOtp}
           onVerifyOtp={verifyOtp}
           onMonthChange={handleMonthChange}
+          onLoyaltyPointsChange={setLoyaltyPointsToUse}
         />
 
         <BookingNavigation

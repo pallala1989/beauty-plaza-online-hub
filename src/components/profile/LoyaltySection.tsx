@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   const [currentPoints, setCurrentPoints] = useState(points);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [redemptionMethod, setRedemptionMethod] = useState("gift_card");
+  const [bankAccount, setBankAccount] = useState("");
+  const [routingNumber, setRoutingNumber] = useState("");
   const { toast } = useToast();
   const { settings, isLoading: settingsLoading } = useSettings();
   const { user } = useAuth();
@@ -80,6 +83,36 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
       return;
     }
 
+    // Validate bank details if bank credit is selected
+    if (redemptionMethod === "bank_credit") {
+      if (!bankAccount || !routingNumber) {
+        toast({
+          title: "Bank Details Required",
+          description: "Please provide both bank account and routing number for bank credit.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (bankAccount.length < 8 || bankAccount.length > 17) {
+        toast({
+          title: "Invalid Account Number",
+          description: "Bank account number must be between 8-17 digits.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (routingNumber.length !== 9) {
+        toast({
+          title: "Invalid Routing Number",
+          description: "Routing number must be exactly 9 digits.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsRedeeming(true);
 
     try {
@@ -101,7 +134,9 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
             userId: user.id,
             points: amount,
             redemptionMethod: redemptionMethod,
-            dollarValue: parseFloat(dollarValue)
+            dollarValue: parseFloat(dollarValue),
+            bankAccount: redemptionMethod === 'bank_credit' ? bankAccount : null,
+            routingNumber: redemptionMethod === 'bank_credit' ? routingNumber : null
           })
         });
 
@@ -138,6 +173,8 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
       });
       
       setRedeemAmount("");
+      setBankAccount("");
+      setRoutingNumber("");
     } catch (error: any) {
       console.error('Error redeeming points:', error);
       toast({
@@ -174,12 +211,23 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
 
   const isRedeemDisabled = () => {
     const amount = parseInt(redeemAmount);
-    return !redeemAmount || 
+    const basicValidation = !redeemAmount || 
            isNaN(amount) || 
            amount < loyaltySettings.min_redemption || 
            amount > currentPoints ||
            isRedeeming ||
            settingsLoading;
+    
+    if (basicValidation) return true;
+    
+    // Additional validation for bank credit
+    if (redemptionMethod === "bank_credit") {
+      return !bankAccount || !routingNumber || 
+             bankAccount.length < 8 || bankAccount.length > 17 ||
+             routingNumber.length !== 9;
+    }
+    
+    return false;
   };
 
   if (settingsLoading) {
@@ -274,6 +322,44 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
                 </div>
               </RadioGroup>
             </div>
+
+            {redemptionMethod === "bank_credit" && (
+              <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="bankAccount" className="text-sm font-medium">
+                      Bank Account Number
+                    </Label>
+                    <Input
+                      id="bankAccount"
+                      type="text"
+                      placeholder="Enter account number"
+                      value={bankAccount}
+                      onChange={(e) => setBankAccount(e.target.value.replace(/[^0-9]/g, ''))}
+                      maxLength={17}
+                      disabled={isRedeeming}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="routingNumber" className="text-sm font-medium">
+                      Routing Number
+                    </Label>
+                    <Input
+                      id="routingNumber"
+                      type="text"
+                      placeholder="9-digit routing number"
+                      value={routingNumber}
+                      onChange={(e) => setRoutingNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                      maxLength={9}
+                      disabled={isRedeeming}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Bank details are encrypted and processed securely. Funds typically arrive within 1-3 business days.
+                </p>
+              </div>
+            )}
 
             <Button
               onClick={handleRedeem}

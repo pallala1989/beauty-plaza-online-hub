@@ -1,4 +1,3 @@
-
 # Beauty Plaza API Specification
 
 This document provides the complete API specification for the Beauty Plaza Spring Boot backend that aligns with the current React frontend implementation.
@@ -58,9 +57,81 @@ The system supports the following admin bypass credentials for testing:
   "customerPhone": "string",
   "customerEmail": "string", 
   "totalAmount": "number",
+  "loyaltyPointsUsed": "number",
+  "loyaltyDiscount": "number",
   "otpVerified": "boolean",
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
+}
+```
+
+### Settings Entity
+```json
+{
+  "servicePrices": {
+    "facial": 75,
+    "haircut": 50,
+    "manicure": 35,
+    "pedicure": 45
+  },
+  "referralAmounts": {
+    "referrerCredit": 10,
+    "referredDiscount": 10
+  },
+  "loyaltySettings": {
+    "pointsPerDollar": 10,
+    "minRedemption": 100,
+    "redemptionRate": 10
+  },
+  "loyaltyTiers": {
+    "bronze": 0,
+    "silver": 500,
+    "gold": 1000,
+    "platinum": 2000
+  },
+  "inHomeFee": 25,
+  "contactPhone": "string",
+  "contactEmail": "string",
+  "contactAddressLine1": "string",
+  "contactAddressLine2": "string",
+  "navigationSettings": {
+    "showPromotions": true,
+    "showLoyalty": true,
+    "showGiftCards": true,
+    "showReferFriend": true
+  },
+  "businessHours": {
+    "monday": {"open": "09:00", "close": "18:00", "closed": false},
+    "tuesday": {"open": "09:00", "close": "18:00", "closed": false},
+    "wednesday": {"open": "09:00", "close": "18:00", "closed": false},
+    "thursday": {"open": "09:00", "close": "18:00", "closed": false},
+    "friday": {"open": "09:00", "close": "18:00", "closed": false},
+    "saturday": {"open": "10:00", "close": "16:00", "closed": false},
+    "sunday": {"open": "10:00", "close": "16:00", "closed": true}
+  },
+  "bookingSettings": {
+    "leadTimeHours": 24,
+    "maxAdvanceBookingDays": 60,
+    "allowWeekendBooking": true
+  },
+  "cancelationPolicy": {
+    "allowCancelation": true,
+    "cancelationLeadTimeHours": 24,
+    "refundPolicy": "full"
+  },
+  "paymentSettings": {
+    "acceptCreditCards": true,
+    "acceptPaypal": true,
+    "acceptApplePay": true,
+    "acceptCash": true,
+    "requireDepositPercentage": 25
+  },
+  "notificationSettings": {
+    "emailConfirmations": true,
+    "smsReminders": true,
+    "emailReminders": true,
+    "reminderHours": 24
+  }
 }
 ```
 
@@ -167,6 +238,8 @@ Request Body: {
   "customerPhone": "string",
   "customerEmail": "string",
   "totalAmount": "number",
+  "loyaltyPointsUsed": "number",
+  "loyaltyDiscount": "number",
   "status": "scheduled",
   "otpVerified": "boolean"
 }
@@ -204,27 +277,59 @@ Request Body: {
 Response: Appointment
 ```
 
-### 5. Settings Management (Admin)
+### 5. Loyalty Points Management
+
+#### Redeem Points
+```
+POST /api/loyalty/redeem
+Request Body: {
+  "userId": "string",
+  "points": "number",
+  "redemptionMethod": "gift_card|bank_credit",
+  "dollarValue": "number",
+  "bankAccount": "string (optional)",
+  "routingNumber": "string (optional)"
+}
+Response: {
+  "success": true,
+  "transactionId": "string",
+  "remainingPoints": "number",
+  "redemptionValue": "number"
+}
+```
+
+#### Get User Points Balance
+```
+GET /api/loyalty/balance/{userId}
+Response: {
+  "userId": "string",
+  "totalPoints": "number",
+  "availablePoints": "number",
+  "pendingPoints": "number",
+  "tierStatus": "bronze|silver|gold|platinum"
+}
+```
+
+#### Get Points History
+```
+GET /api/loyalty/history/{userId}
+Response: [
+  {
+    "transactionId": "string",
+    "type": "earned|redeemed",
+    "points": "number",
+    "description": "string",
+    "timestamp": "timestamp"
+  }
+]
+```
+
+### 6. Settings Management (Admin)
 
 #### Get All Settings
 ```
 GET /api/admin/settings
-Response: {
-  "servicePrices": {
-    "facial": 75,
-    "haircut": 50
-  },
-  "referralAmounts": {
-    "referrerCredit": 10,
-    "referredDiscount": 10
-  },
-  "loyaltySettings": {
-    "pointsPerDollar": 10,
-    "minRedemption": 100,
-    "redemptionRate": 10
-  },
-  "inHomeFee": 25
-}
+Response: Settings (complete settings object)
 ```
 
 #### Update Setting
@@ -234,6 +339,29 @@ Request Body: {
   "value": "any"
 }
 Response: { "key": "string", "value": "any" }
+```
+
+#### Update Business Hours
+```
+POST /api/admin/settings/business-hours
+Request Body: {
+  "monday": {"open": "09:00", "close": "18:00", "closed": false},
+  "tuesday": {"open": "09:00", "close": "18:00", "closed": false},
+  // ... other days
+}
+Response: { "success": true }
+```
+
+#### Update Navigation Settings
+```
+POST /api/admin/settings/navigation
+Request Body: {
+  "showPromotions": true,
+  "showLoyalty": true,
+  "showGiftCards": true,
+  "showReferFriend": true
+}
+Response: { "success": true }
 ```
 
 ## Error Responses
@@ -306,11 +434,30 @@ CREATE TABLE appointments (
   customer_phone VARCHAR(50),
   customer_email VARCHAR(255),
   total_amount DECIMAL(10,2),
+  loyalty_points_used INTEGER DEFAULT 0,
+  loyalty_discount DECIMAL(10,2) DEFAULT 0.00,
   otp_verified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (service_id) REFERENCES services(id),
   FOREIGN KEY (technician_id) REFERENCES technicians(id)
+);
+```
+
+### loyalty_points table
+```sql
+CREATE TABLE loyalty_points (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id VARCHAR(255) NOT NULL,
+  transaction_type ENUM('earned', 'redeemed') NOT NULL,
+  points INTEGER NOT NULL,
+  description VARCHAR(500),
+  appointment_id BIGINT NULL,
+  redemption_method ENUM('gift_card', 'bank_credit') NULL,
+  bank_account VARCHAR(255) NULL,
+  routing_number VARCHAR(20) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id)
 );
 ```
 
@@ -377,3 +524,28 @@ Make sure your Spring Boot application includes CORS configuration:
   }
 ]
 ```
+
+## New Features Added
+
+### Navigation Control
+- Admin can toggle visibility of Promotions, Loyalty, Gift Cards, and Refer Friend menu items
+- Changes reflect immediately in the navigation bar
+
+### Enhanced Booking Flow
+- Auto-selection of today's date when reaching date/time step
+- Auto-selection of first available time slot for selected date
+- Service images are properly loaded and cached locally
+- Loyalty points integration in booking with discount calculation
+
+### Loyalty Points Enhancements
+- Bank account redemption with account number and routing number validation
+- Gift card and bank credit redemption options
+- Points usage during booking process with real-time total calculation
+- Enhanced validation and error handling
+
+### Admin Dashboard Features
+- Full CRUD operations for Services (Create, Read, Update, Delete)
+- Full CRUD operations for Technicians
+- Enhanced appointment management with detailed customer information
+- Comprehensive settings management including business hours, notifications, payment options
+- Image URL management for services with proper validation

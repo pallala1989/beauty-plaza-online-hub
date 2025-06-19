@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,21 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   onMonthChange
 }) => {
   console.log('DateTimeSelection rendered with bookedSlots:', bookedSlots);
+
+  // Auto-select first available time slot when date is selected and bookedSlots are loaded
+  useEffect(() => {
+    if (selectedDate && !selectedTime && !isFetchingSlots && bookedSlots.length > 0) {
+      const firstAvailableSlot = timeSlots.find(slot => !bookedSlots.includes(slot));
+      if (firstAvailableSlot) {
+        console.log('Auto-selecting first available slot:', firstAvailableSlot);
+        onTimeSelect(firstAvailableSlot);
+      }
+    } else if (selectedDate && !selectedTime && !isFetchingSlots && bookedSlots.length === 0) {
+      // If no booked slots data yet, select first slot
+      console.log('Auto-selecting first time slot:', timeSlots[0]);
+      onTimeSelect(timeSlots[0]);
+    }
+  }, [selectedDate, selectedTime, bookedSlots, isFetchingSlots, onTimeSelect]);
 
   const handleTimeSelect = (time: string) => {
     // Prevent selection of booked slots

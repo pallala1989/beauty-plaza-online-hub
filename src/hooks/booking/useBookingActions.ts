@@ -90,7 +90,8 @@ export const useBookingActions = (
     selectedTime: string,
     serviceType: string,
     services: any[],
-    technicians: any[]
+    technicians: any[],
+    loyaltyPointsToUse: number = 0
   ) => {
     if (!user) {
       toast({
@@ -107,7 +108,13 @@ export const useBookingActions = (
     try {
       // Create appointment data for Spring Boot backend
       const selectedServiceDetails = services.find(s => s.id === selectedService);
-      const totalAmount = (selectedServiceDetails?.price || 0) + (serviceType === "in-home" ? 25 : 0);
+      const servicePrice = selectedServiceDetails?.price || 0;
+      const inHomeFee = serviceType === "in-home" ? 25 : 0;
+      const subtotal = servicePrice + inHomeFee;
+      
+      // Apply loyalty points discount
+      const loyaltyDiscount = loyaltyPointsToUse / 10; // 10 points = $1
+      const totalAmount = Math.max(0, subtotal - loyaltyDiscount);
 
       const appointmentData = {
         customerId: user.id,
@@ -120,6 +127,8 @@ export const useBookingActions = (
         customerPhone: customerInfo.phone,
         customerEmail: customerInfo.email,
         totalAmount: totalAmount,
+        loyaltyPointsUsed: loyaltyPointsToUse,
+        loyaltyDiscount: loyaltyDiscount,
         status: 'scheduled',
         otpVerified: serviceType === 'in-home' ? true : false
       };
@@ -147,6 +156,14 @@ export const useBookingActions = (
         localStorage.setItem(`appointment_${Date.now()}`, JSON.stringify(appointmentData));
       }
 
+      // Deduct loyalty points from user's account if used
+      if (loyaltyPointsToUse > 0) {
+        const userPointsKey = `user_points_${user.id}`;
+        const currentPoints = parseInt(localStorage.getItem(userPointsKey) || "850");
+        const newPoints = currentPoints - loyaltyPointsToUse;
+        localStorage.setItem(userPointsKey, newPoints.toString());
+      }
+
       await sendConfirmationEmail({
         services,
         technicians,
@@ -156,7 +173,9 @@ export const useBookingActions = (
         selectedTime,
         serviceType,
         customerInfo,
-        totalAmount
+        totalAmount,
+        loyaltyPointsUsed: loyaltyPointsToUse,
+        loyaltyDiscount
       });
 
       setBookingDetails({
@@ -167,7 +186,9 @@ export const useBookingActions = (
         appointment_time: selectedTime,
         service_duration: selectedServiceDetails?.duration,
         customer_name: customerInfo.name,
-        customer_info: customerInfo
+        customer_info: customerInfo,
+        loyalty_points_used: loyaltyPointsToUse,
+        loyalty_discount: loyaltyDiscount
       });
 
       setShowConfirmation(true);
@@ -191,7 +212,7 @@ export const useBookingActions = (
     setStep(1);
     setSelectedService("");
     setSelectedTechnician("");
-    setSelectedDate(undefined);
+    setSelectedDate(new Date()); // Reset to today
     setSelectedTime("");
     setServiceType("in-store");
     setOtp("");
@@ -201,7 +222,9 @@ export const useBookingActions = (
       email: user?.email || "",
       phone: "",
       address: "",
-      notes: ""
+      notes: "",
+      bankAccount: "",
+      routingNumber: ""
     });
     
     navigate("/");

@@ -47,6 +47,8 @@ export const useBookingFlow = () => {
     setShowConfirmation,
     bookingDetails,
     setBookingDetails,
+    loyaltyPointsToUse,
+    setLoyaltyPointsToUse,
     customerInfo,
     setCustomerInfo
   } = useBookingState();
@@ -148,7 +150,7 @@ export const useBookingFlow = () => {
 
   const wrappedHandleSubmit = async () => {
     if (selectedDate) {
-      await handleSubmit(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, services, technicians);
+      await handleSubmit(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, services, technicians, loyaltyPointsToUse);
     }
   };
 
@@ -169,6 +171,7 @@ export const useBookingFlow = () => {
     showConfirmation,
     bookingDetails,
     customerInfo,
+    loyaltyPointsToUse,
     services,
     beautyservices,
     technicians,
@@ -182,6 +185,7 @@ export const useBookingFlow = () => {
     setServiceType,
     setOtp,
     setCustomerInfo,
+    setLoyaltyPointsToUse,
     handleNext: wrappedHandleNext,
     handleBack,
     sendOtp,

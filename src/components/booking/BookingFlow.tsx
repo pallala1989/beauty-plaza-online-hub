@@ -21,6 +21,7 @@ interface BookingFlowProps {
   selectedDate?: Date;
   selectedTime: string;
   customerInfo: any;
+  loyaltyPointsToUse?: number;
   otp: string;
   otpSent: boolean;
   onServiceSelect: (serviceId: string) => void;
@@ -34,6 +35,7 @@ interface BookingFlowProps {
   onSendOtp: () => void;
   onVerifyOtp: () => void;
   onMonthChange: (date: Date) => void;
+  onLoyaltyPointsChange?: (points: number) => void;
 }
 
 const BookingFlow: React.FC<BookingFlowProps> = ({
@@ -49,6 +51,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   selectedDate,
   selectedTime,
   customerInfo,
+  loyaltyPointsToUse,
   otp,
   otpSent,
   onServiceSelect,
@@ -61,7 +64,8 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   onOtpChange,
   onSendOtp,
   onVerifyOtp,
-  onMonthChange
+  onMonthChange,
+  onLoyaltyPointsChange
 }) => {
   const getStepTitle = () => {
     if (step === 1) return "Step 1: Select Service";
@@ -144,7 +148,9 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
             selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
+            loyaltyPointsToUse={loyaltyPointsToUse}
             onCustomerInfoChange={onCustomerInfoChange}
+            onLoyaltyPointsChange={onLoyaltyPointsChange}
           />
         )}
       </CardContent>

@@ -10,7 +10,7 @@ export const useBookingState = () => {
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState("");
   const [selectedTechnician, setSelectedTechnician] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Auto-select today's date
   const [selectedTime, setSelectedTime] = useState("");
   const [serviceType, setServiceType] = useState("in-store");
   const [otp, setOtp] = useState("");
@@ -18,12 +18,15 @@ export const useBookingState = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [loyaltyPointsToUse, setLoyaltyPointsToUse] = useState(0);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
-    notes: ""
+    notes: "",
+    bankAccount: "",
+    routingNumber: ""
   });
 
   // Pre-select service if passed from Services page
@@ -41,7 +44,7 @@ export const useBookingState = () => {
         ...prev,
         email: user.email || "",
         name: user.name || "",
-        phone: user.phone || "" // Auto-populate phone number
+        phone: user.phone || ""
       }));
     }
   }, [user]);
@@ -69,6 +72,8 @@ export const useBookingState = () => {
     setShowConfirmation,
     bookingDetails,
     setBookingDetails,
+    loyaltyPointsToUse,
+    setLoyaltyPointsToUse,
     customerInfo,
     setCustomerInfo
   };

@@ -42,7 +42,7 @@ const Navbar = () => {
   if (profile?.role === 'admin') {
     roleSpecificNavigation.push({ name: "Admin Dashboard", href: "/admin" });
   }
-  if (profile?.role === 'user') { // Changed from 'customer' to 'user'
+  if (profile?.role === 'user') {
     roleSpecificNavigation.push({ name: "My Bookings", href: "/my-bookings" });
   }
 
