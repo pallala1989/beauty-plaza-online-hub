@@ -1,16 +1,24 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Crown, Star, Gift, Award, Heart, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoyaltyProgram = () => {
-  // Mock user data - in real app this would come from authentication
-  const userPoints = 850;
-  const pointsToNextTier = 150;
-  const currentTier = "Silver";
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Get user points from localStorage
+  const userPointsKey = `user_points_${user?.id}`;
+  const [userPoints, setUserPoints] = useState(parseInt(localStorage.getItem(userPointsKey) || "850"));
+  
+  const pointsToNextTier = Math.max(0, 1000 - userPoints);
+  const currentTier = userPoints >= 2000 ? "Platinum" : userPoints >= 1000 ? "Gold" : userPoints >= 500 ? "Silver" : "Bronze";
   
   const tiers = [
     {
@@ -61,6 +69,36 @@ const LoyaltyProgram = () => {
   const currentTierIndex = tiers.findIndex(tier => tier.name === currentTier);
   const nextTier = tiers[currentTierIndex + 1];
   const progressPercentage = nextTier ? ((userPoints - tiers[currentTierIndex].minPoints) / (nextTier.minPoints - tiers[currentTierIndex].minPoints)) * 100 : 100;
+
+  const handleRedeem = (option: { points: number; reward: string; available: boolean }) => {
+    if (!option.available) {
+      toast({
+        title: "Insufficient Points",
+        description: `You need ${option.points} points to redeem this reward.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to redeem rewards.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Deduct points
+    const newPoints = userPoints - option.points;
+    setUserPoints(newPoints);
+    localStorage.setItem(userPointsKey, newPoints.toString());
+
+    toast({
+      title: "Reward Redeemed!",
+      description: `You've successfully redeemed: ${option.reward}`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
@@ -243,6 +281,7 @@ const LoyaltyProgram = () => {
                         <Button
                           size="sm"
                           disabled={!option.available}
+                          onClick={() => handleRedeem(option)}
                           className={
                             option.available
                               ? "bg-pink-500 hover:bg-pink-600"

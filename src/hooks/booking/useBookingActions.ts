@@ -159,6 +159,13 @@ export const useBookingActions = (
         localStorage.setItem(`appointment_${Date.now()}`, JSON.stringify(appointmentData));
       }
 
+      // Store the booked slot in localStorage to mark it as unavailable
+      const dateKey = format(selectedDate, 'yyyy-MM-dd');
+      const bookedSlotsKey = `booked_slots_${selectedTechnician}_${dateKey}`;
+      const existingSlots = JSON.parse(localStorage.getItem(bookedSlotsKey) || '[]');
+      const updatedSlots = [...existingSlots, selectedTime];
+      localStorage.setItem(bookedSlotsKey, JSON.stringify(updatedSlots));
+
       // Deduct loyalty points from user's account if used
       if (loyaltyPointsToUse > 0) {
         const userPointsKey = `user_points_${user.id}`;
@@ -198,6 +205,11 @@ export const useBookingActions = (
       });
 
       setShowConfirmation(true);
+
+      // Refresh booked slots after successful booking
+      if (refreshBookedSlots) {
+        await refreshBookedSlots(selectedDate, selectedTechnician);
+      }
 
     } catch (error: any) {
       console.error('Error creating appointment:', error);

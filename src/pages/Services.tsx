@@ -1,41 +1,42 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Clock, DollarSign, Star } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
+import { useNavigate } from "react-router-dom";
 
 const Services = () => {
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const { services, isLoading } = useServices();
+  const navigate = useNavigate();
 
-  const categories = ["All", "Facial", "Hair", "Makeup", "Waxing", "Nails"];
+  const handleBookService = (service: any) => {
+    console.log('Booking service:', service);
+    navigate("/book-online", { 
+      state: { 
+        preSelectedService: {
+          id: service.id,
+          name: service.name,
+          price: service.price,
+          duration: service.duration,
+          description: service.description,
+          image_url: service.image_url
+        }
+      } 
+    });
+  };
 
-  // Map services to include category based on name
-  const servicesWithCategory = services.map(service => ({
-    ...service,
-    category: service.name.toLowerCase().includes('facial') ? 'Facial' :
-              service.name.toLowerCase().includes('hair') ? 'Hair' :
-              service.name.toLowerCase().includes('makeup') ? 'Makeup' :
-              service.name.toLowerCase().includes('wax') || service.name.toLowerCase().includes('eyebrow') ? 'Waxing' :
-              service.name.toLowerCase().includes('manicure') || service.name.toLowerCase().includes('nail') ? 'Nails' : 'Other',
-    popular: [1, 3, 5, 7, 9].includes(parseInt(service.id)) // Mark some as popular using integer comparison
-  }));
-
-  const filteredServices = selectedCategory === "All" 
-    ? servicesWithCategory 
-    : servicesWithCategory.filter(service => service.category === selectedCategory);
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading services...</p>
-          </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">Loading services...</div>
         </div>
       </div>
     );
@@ -43,103 +44,63 @@ const Services = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
             Our Services
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Discover our comprehensive range of premium beauty services, each designed to enhance your natural beauty and leave you feeling confident and radiant.
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover our premium beauty services designed to make you look and feel your best
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              onClick={() => setSelectedCategory(category)}
-              className={selectedCategory === category 
-                ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white" 
-                : "border-pink-200 text-pink-600 hover:bg-pink-50"
-              }
-            >
-              {category}
-            </Button>
-          ))}
-        </div>
-
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {filteredServices.map((service) => (
-            <Card key={service.id} className="group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="relative overflow-hidden rounded-t-lg">
-                <img 
-                  src={service.image_url} 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {services.map((service) => (
+            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <div className="aspect-video overflow-hidden">
+                <img
+                  src={service.image_url || "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"}
                   alt={service.name}
-                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  onError={handleImageError}
+                  loading="lazy"
                 />
-                {service.popular && (
-                  <Badge className="absolute top-3 right-3 bg-gradient-to-r from-pink-500 to-purple-600">
-                    Popular
-                  </Badge>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
               
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{service.name}</CardTitle>
-                    <CardDescription className="text-sm text-gray-500">
-                      {service.duration} min
-                    </CardDescription>
+                  <CardTitle className="text-xl">{service.name}</CardTitle>
+                  <Badge variant="secondary" className="ml-2">
+                    <Star className="w-3 h-3 mr-1" />
+                    4.9
+                  </Badge>
+                </div>
+                <CardDescription className="text-sm text-gray-600 line-clamp-2">
+                  {service.description}
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center text-pink-600">
+                    <DollarSign className="w-4 h-4 mr-1" />
+                    <span className="font-bold text-lg">${service.price}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-pink-600">${service.price}</div>
+                  <div className="flex items-center text-gray-600">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span className="text-sm">{service.duration} min</span>
                   </div>
                 </div>
-              </CardHeader>
-              
-              <CardContent>
-                <p className="text-gray-600 mb-4">{service.description}</p>
-                <Link to="/book-online" state={{ preSelectedService: service }}>
-                  <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700">
-                    Book This Service
-                  </Button>
-                </Link>
+
+                <Button 
+                  onClick={() => handleBookService(service)}
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                >
+                  Book This Service
+                </Button>
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {/* Call to Action */}
-        <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl p-8 text-white text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Can't Find What You're Looking For?
-          </h2>
-          <p className="text-lg mb-6">
-            Contact us for custom treatments and personalized beauty consultations
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/contact">
-              <Button size="lg" className="bg-white text-pink-600 hover:bg-gray-100">
-                Contact Us
-              </Button>
-            </Link>
-            <a href="tel:+19039210271" className="inline-block">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-pink-600"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Call (903) 921-0271
-              </Button>
-            </a>
-          </div>
         </div>
       </div>
     </div>
