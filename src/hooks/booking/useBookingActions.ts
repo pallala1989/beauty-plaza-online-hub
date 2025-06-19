@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { sendConfirmationEmail } from "@/utils/emailService";
+import { useLoyaltyPoints } from "@/hooks/useLoyaltyPoints";
 
 export const useBookingActions = (
   step: number,
@@ -26,6 +27,7 @@ export const useBookingActions = (
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { deductPoints } = useLoyaltyPoints();
 
   const handleNext = (
     selectedServices: string[],
@@ -104,11 +106,26 @@ export const useBookingActions = (
       return;
     }
 
+    // Validate that we have selected services
+    if (!selectedServices || selectedServices.length === 0) {
+      toast({
+        title: "No Services Selected",
+        description: "Please select at least one service to book.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       // Calculate total for all selected services
       const selectedServiceDetails = services.filter(s => selectedServices.includes(s.id.toString()));
+      
+      if (selectedServiceDetails.length === 0) {
+        throw new Error("Selected services not found");
+      }
+
       const servicesTotal = selectedServiceDetails.reduce((sum, service) => sum + service.price, 0);
       const totalDuration = selectedServiceDetails.reduce((sum, service) => sum + service.duration, 0);
       const inHomeFee = serviceType === "in-home" ? 25 : 0;
@@ -120,7 +137,7 @@ export const useBookingActions = (
 
       const appointmentData = {
         customerId: user.id,
-        serviceIds: selectedServices, // Multiple services
+        serviceIds: selectedServices,
         technicianId: selectedTechnician,
         appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
         appointmentTime: selectedTime,
@@ -166,19 +183,16 @@ export const useBookingActions = (
       const updatedSlots = [...existingSlots, selectedTime];
       localStorage.setItem(bookedSlotsKey, JSON.stringify(updatedSlots));
 
-      // Deduct loyalty points from user's account if used
+      // Deduct loyalty points using shared hook
       if (loyaltyPointsToUse > 0) {
-        const userPointsKey = `user_points_${user.id}`;
-        const currentPoints = parseInt(localStorage.getItem(userPointsKey) || "850");
-        const newPoints = currentPoints - loyaltyPointsToUse;
-        localStorage.setItem(userPointsKey, newPoints.toString());
+        deductPoints(loyaltyPointsToUse);
       }
 
       // Send confirmation email (using first service for compatibility)
       await sendConfirmationEmail({
         services,
         technicians,
-        selectedService: selectedServices[0], // Use first service for email
+        selectedService: selectedServices[0],
         selectedTechnician,
         selectedDate,
         selectedTime,
@@ -192,7 +206,7 @@ export const useBookingActions = (
       setBookingDetails({
         ...appointmentData,
         service_names: selectedServiceDetails.map(s => s.name),
-        service_name: selectedServiceDetails.map(s => s.name).join(', '), // For compatibility
+        service_name: selectedServiceDetails.map(s => s.name).join(', '),
         technician_name: technicians.find(t => t.id === selectedTechnician)?.name,
         selectedDate: selectedDate,
         appointment_time: selectedTime,

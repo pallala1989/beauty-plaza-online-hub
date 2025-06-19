@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Star, Minus, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
+import { useLoyaltyPoints } from "@/hooks/useLoyaltyPoints";
 
 interface LoyaltyPointsUsageProps {
   totalAmount: number;
@@ -21,10 +22,7 @@ const LoyaltyPointsUsage: React.FC<LoyaltyPointsUsageProps> = ({
 }) => {
   const { user } = useAuth();
   const { settings } = useSettings();
-
-  // Get user's available points (in real app, this would come from backend)
-  const userPointsKey = `user_points_${user?.id}`;
-  const availablePoints = parseInt(localStorage.getItem(userPointsKey) || "850");
+  const { points: availablePoints } = useLoyaltyPoints();
   
   // Get loyalty settings
   const loyaltySettings = settings?.loyalty_settings || { redemption_rate: 10 };

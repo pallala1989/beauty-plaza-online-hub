@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,18 +7,52 @@ import { Link } from "react-router-dom";
 import { Crown, Star, Gift, Award, Heart, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLoyaltyPoints } from "@/hooks/useLoyaltyPoints";
+import { useSettings } from "@/hooks/useSettings";
 
 const LoyaltyProgram = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { points: userPoints, deductPoints } = useLoyaltyPoints();
+  const { settings } = useSettings();
   
-  // Get user points from localStorage
-  const userPointsKey = `user_points_${user?.id}`;
-  const [userPoints, setUserPoints] = useState(parseInt(localStorage.getItem(userPointsKey) || "850"));
+  // Check if loyalty is enabled in admin settings
+  const isLoyaltyEnabled = settings?.loyalty_enabled !== false;
+  
+  // Get loyalty settings with defaults
+  const loyaltyTiers = settings?.loyalty_tiers || { 
+    bronze: 0, 
+    silver: 500, 
+    gold: 1000, 
+    platinum: 2000 
+  };
   
   const pointsToNextTier = Math.max(0, 1000 - userPoints);
   const currentTier = userPoints >= 2000 ? "Platinum" : userPoints >= 1000 ? "Gold" : userPoints >= 500 ? "Silver" : "Bronze";
   
+  // If loyalty is disabled, show message
+  if (!isLoyaltyEnabled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Loyalty Program
+            </h1>
+            <p className="text-lg text-gray-600">
+              The loyalty program is currently unavailable.
+            </p>
+            <Link to="/">
+              <Button className="mt-6">
+                Return to Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const tiers = [
     {
       name: "Bronze",
@@ -89,10 +122,8 @@ const LoyaltyProgram = () => {
       return;
     }
 
-    // Deduct points
-    const newPoints = userPoints - option.points;
-    setUserPoints(newPoints);
-    localStorage.setItem(userPointsKey, newPoints.toString());
+    // Deduct points using shared hook
+    deductPoints(option.points);
 
     toast({
       title: "Reward Redeemed!",

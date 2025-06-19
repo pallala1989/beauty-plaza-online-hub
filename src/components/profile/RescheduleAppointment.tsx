@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import CurrentAppointmentInfo from "./reschedule/CurrentAppointmentInfo";
 import DateSelection from "./reschedule/DateSelection";
@@ -52,20 +51,21 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
 
   const fetchTechnicians = async () => {
     try {
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .eq('is_available', true);
-      
-      if (error) throw error;
-      setTechnicians(data || []);
+      // Try to fetch from API first
+      const response = await fetch('http://localhost:8080/api/technicians');
+      if (!response.ok) throw new Error('API not available');
+      const data = await response.json();
+      setTechnicians(data?.filter((t: any) => t.is_available) || []);
     } catch (error) {
-      console.error('Error fetching technicians:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load technicians. Please try again.",
-        variant: "destructive",
-      });
+      // Fallback to local data
+      console.log('Using local technicians data for reschedule');
+      const techData = [
+        { id: "1", name: "Sarah Johnson", is_available: true },
+        { id: "2", name: "Emily Chen", is_available: true },
+        { id: "3", name: "Maria Rodriguez", is_available: true },
+        { id: "4", name: "Ashley Kim", is_available: true }
+      ];
+      setTechnicians(techData);
     }
   };
 
@@ -77,23 +77,22 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
 
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log('Fetching booked slots for:', { date: formattedDate, technicianId, excludeAppointment: appointmentId });
+      console.log('Fetching booked slots for reschedule:', { date: formattedDate, technicianId, excludeAppointment: appointmentId });
       
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('appointment_time')
-        .eq('technician_id', technicianId)
-        .eq('appointment_date', formattedDate)
-        .in('status', ['scheduled', 'confirmed'])
-        .neq('id', appointmentId); // Exclude current appointment
+      // Check localStorage for booked slots (excluding current appointment)
+      const bookedSlotsKey = `booked_slots_${technicianId}_${formattedDate}`;
+      const localBookedSlots = JSON.parse(localStorage.getItem(bookedSlotsKey) || '[]');
       
-      if (error) throw error;
+      // Filter out the current appointment time if it's the same technician and date
+      let filteredSlots = localBookedSlots;
+      if (technicianId === currentTechnician && formattedDate === currentDate) {
+        filteredSlots = localBookedSlots.filter((slot: string) => slot !== currentTime);
+      }
       
-      const booked = data?.map(appointment => appointment.appointment_time) || [];
-      console.log('Booked slots found:', booked);
-      setBookedSlots(booked);
+      console.log('Booked slots found for reschedule:', filteredSlots);
+      setBookedSlots(filteredSlots);
     } catch (error) {
-      console.error('Error fetching booked slots:', error);
+      console.error('Error fetching booked slots for reschedule:', error);
       setBookedSlots([]);
     }
   };
@@ -101,20 +100,22 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
   const validateSlotAvailability = async (date: Date, time: string, technicianId: string): Promise<boolean> => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('technician_id', technicianId)
-        .eq('appointment_date', formattedDate)
-        .eq('appointment_time', time)
-        .in('status', ['scheduled', 'confirmed'])
-        .neq('id', appointmentId);
+      const bookedSlotsKey = `booked_slots_${technicianId}_${formattedDate}`;
+      const localBookedSlots = JSON.parse(localStorage.getItem(bookedSlotsKey) || '[]');
       
-      if (error) throw error;
+      // Check if the slot is booked by someone else (excluding current appointment)
+      const isSlotBooked = localBookedSlots.some((slot: string) => {
+        // If it's the same technician, date, and time as current appointment, it's available
+        if (technicianId === currentTechnician && formattedDate === currentDate && slot === currentTime) {
+          return false;
+        }
+        return slot === time;
+      });
       
-      return !data || data.length === 0;
+      console.log('Slot availability check:', { date: formattedDate, time, technicianId, isSlotBooked });
+      return !isSlotBooked;
     } catch (error) {
-      console.error('Error validating slot availability:', error);
+      console.error('Error validating slot availability for reschedule:', error);
       return false;
     }
   };
@@ -146,27 +147,30 @@ const RescheduleAppointment: React.FC<RescheduleAppointmentProps> = ({
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          appointment_date: formattedDate,
-          appointment_time: selectedTime,
-          technician_id: selectedTechnicianId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointmentId);
-
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Time Slot Unavailable",
-            description: "This time slot is already booked. Please select a different time.",
-            variant: "destructive",
-          });
-          await fetchBookedSlots(selectedDate, selectedTechnicianId);
-          return;
-        }
-        throw error;
+      // Update the appointment in localStorage (since we're using local storage for demo)
+      const appointmentKey = `appointment_${appointmentId}`;
+      const existingAppointment = JSON.parse(localStorage.getItem(appointmentKey) || '{}');
+      
+      if (existingAppointment) {
+        // Remove old slot from booked slots
+        const oldBookedSlotsKey = `booked_slots_${currentTechnician}_${currentDate}`;
+        const oldBookedSlots = JSON.parse(localStorage.getItem(oldBookedSlotsKey) || '[]');
+        const updatedOldSlots = oldBookedSlots.filter((slot: string) => slot !== currentTime);
+        localStorage.setItem(oldBookedSlotsKey, JSON.stringify(updatedOldSlots));
+        
+        // Add new slot to booked slots
+        const newBookedSlotsKey = `booked_slots_${selectedTechnicianId}_${formattedDate}`;
+        const newBookedSlots = JSON.parse(localStorage.getItem(newBookedSlotsKey) || '[]');
+        newBookedSlots.push(selectedTime);
+        localStorage.setItem(newBookedSlotsKey, JSON.stringify(newBookedSlots));
+        
+        // Update appointment details
+        existingAppointment.appointmentDate = formattedDate;
+        existingAppointment.appointmentTime = selectedTime;
+        existingAppointment.technicianId = selectedTechnicianId;
+        existingAppointment.updated_at = new Date().toISOString();
+        
+        localStorage.setItem(appointmentKey, JSON.stringify(existingAppointment));
       }
 
       toast({

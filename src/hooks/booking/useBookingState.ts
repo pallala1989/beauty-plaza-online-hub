@@ -35,8 +35,9 @@ export const useBookingState = () => {
     if (location.state?.preSelectedService) {
       const service = location.state.preSelectedService;
       console.log('Pre-selecting service from location state:', service);
-      setSelectedServices([service.id.toString()]);
-      setSelectedService(service.id.toString());
+      const serviceId = service.id.toString();
+      setSelectedServices([serviceId]);
+      setSelectedService(serviceId);
     }
   }, [location.state]);
 

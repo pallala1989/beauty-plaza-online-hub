@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,15 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, Star, CreditCard, Banknote } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLoyaltyPoints } from "@/hooks/useLoyaltyPoints";
 
 interface LoyaltySectionProps {
-  points: number;
-  onRedeemPoints: (points: number) => void;
+  onRedeemPoints?: (points: number) => void;
 }
 
-const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) => {
+const LoyaltySection = ({ onRedeemPoints }: LoyaltySectionProps) => {
   const [redeemAmount, setRedeemAmount] = useState("");
-  const [currentPoints, setCurrentPoints] = useState(points);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [redemptionMethod, setRedemptionMethod] = useState("gift_card");
   const [bankAccount, setBankAccount] = useState("");
@@ -26,6 +24,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   const { toast } = useToast();
   const { settings, isLoading: settingsLoading } = useSettings();
   const { user } = useAuth();
+  const { points: currentPoints, deductPoints } = useLoyaltyPoints();
 
   // Get settings with defaults
   const loyaltySettings = settings?.loyalty_settings || { 
@@ -43,6 +42,26 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
   useEffect(() => {
     setCurrentPoints(points);
   }, [points]);
+
+  const getNextRewardLevel = () => {
+    const tiers = Object.entries(loyaltyTiers).sort(([,a], [,b]) => a - b);
+    
+    for (let i = 0; i < tiers.length; i++) {
+      const [tierName, threshold] = tiers[i];
+      if (currentPoints < threshold) {
+        const prevTier = i > 0 ? tiers[i-1] : null;
+        return { 
+          level: prevTier ? prevTier[0] : "Bronze", 
+          needed: threshold - currentPoints, 
+          next: tierName 
+        };
+      }
+    }
+    
+    // User has reached highest tier
+    const highestTier = tiers[tiers.length - 1];
+    return { level: highestTier[0], needed: 0, next: "VIP" };
+  };
 
   const handleRedeem = async () => {
     const amount = parseInt(redeemAmount);
@@ -150,15 +169,8 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
         console.log('Backend unavailable, using local simulation');
       }
       
-      // Simulate points redemption with local storage for demo
-      const newPoints = currentPoints - amount;
-      
-      // Store user points in localStorage for demo
-      const userPointsKey = `user_points_${user.id}`;
-      localStorage.setItem(userPointsKey, newPoints.toString());
-      
-      // Update local state
-      setCurrentPoints(newPoints);
+      // Update points using shared hook
+      deductPoints(amount);
       
       // Call parent function if provided
       if (onRedeemPoints) {
@@ -185,26 +197,6 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
     } finally {
       setIsRedeeming(false);
     }
-  };
-
-  const getNextRewardLevel = () => {
-    const tiers = Object.entries(loyaltyTiers).sort(([,a], [,b]) => a - b);
-    
-    for (let i = 0; i < tiers.length; i++) {
-      const [tierName, threshold] = tiers[i];
-      if (currentPoints < threshold) {
-        const prevTier = i > 0 ? tiers[i-1] : null;
-        return { 
-          level: prevTier ? prevTier[0] : "Bronze", 
-          needed: threshold - currentPoints, 
-          next: tierName 
-        };
-      }
-    }
-    
-    // User has reached highest tier
-    const highestTier = tiers[tiers.length - 1];
-    return { level: highestTier[0], needed: 0, next: "VIP" };
   };
 
   const rewardInfo = getNextRewardLevel();
