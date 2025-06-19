@@ -150,7 +150,7 @@ const CustomerInformation: React.FC<CustomerInformationProps> = ({
         <LoyaltyPointsUsage
           totalAmount={subtotal}
           loyaltyPointsToUse={loyaltyPointsToUse}
-          onLoyaltyPointsChange={onLoyaltyPointsChange}
+          onPointsChange={onLoyaltyPointsChange}
         />
       )}
 
