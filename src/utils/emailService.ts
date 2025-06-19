@@ -18,8 +18,6 @@ interface EmailData {
     notes: string;
   };
   totalAmount: number;
-  loyaltyPointsUsed?: number;
-  loyaltyDiscount?: number;
 }
 
 export const sendConfirmationEmail = async (emailData: EmailData) => {
@@ -52,8 +50,6 @@ Email: ${emailData.customerInfo.email}
 Phone: ${emailData.customerInfo.phone}
 ${emailData.serviceType === 'in-home' ? `Address: ${emailData.customerInfo.address}` : ''}
 ${emailData.customerInfo.notes ? `Notes: ${emailData.customerInfo.notes}` : ''}
-${emailData.loyaltyPointsUsed ? `Loyalty Points Used: ${emailData.loyaltyPointsUsed}` : ''}
-${emailData.loyaltyDiscount ? `Loyalty Discount: $${emailData.loyaltyDiscount.toFixed(2)}` : ''}
 Total Amount: $${emailData.totalAmount}
         `
       }
