@@ -95,7 +95,7 @@ const LoyaltySection = ({ points = 850, onRedeemPoints }: LoyaltySectionProps) =
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.access_token || 'demo-token'}`
+            'Authorization': `Bearer demo-token-${user.id}`
           },
           body: JSON.stringify({
             userId: user.id,
