@@ -7,7 +7,9 @@ import { format } from "date-fns";
 import { generateIcsContent } from '@/utils/icalService';
 
 interface BookingDetails {
-  service_name: string;
+  service_name?: string;
+  service_names?: string[];
+  selected_services?: any[];
   technician_name: string;
   selectedDate: Date;
   appointment_time: string;
@@ -35,8 +37,12 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
   const handleAddToCalendar = async () => {
     if (!bookingDetails) return;
 
+    const serviceName = bookingDetails.service_names 
+      ? bookingDetails.service_names.join(', ')
+      : bookingDetails.service_name || 'Beauty Service';
+
     const icalData = {
-      serviceName: bookingDetails.service_name,
+      serviceName,
       technicianName: bookingDetails.technician_name,
       selectedDate: bookingDetails.selectedDate,
       selectedTime: bookingDetails.appointment_time,
@@ -61,6 +67,13 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
     }
   };
 
+  const getServiceDisplay = () => {
+    if (bookingDetails?.selected_services && bookingDetails.selected_services.length > 0) {
+      return bookingDetails.selected_services.map(service => service.name).join(', ');
+    }
+    return bookingDetails?.service_names?.join(', ') || bookingDetails?.service_name || 'Beauty Service';
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={() => {}}>
       <AlertDialogContent className="max-w-md">
@@ -73,7 +86,7 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
           </AlertDialogTitle>
           <AlertDialogDescription className="text-center space-y-2">
             <p className="text-lg font-semibold text-gray-900">
-              {bookingDetails?.service_name}
+              {getServiceDisplay()}
             </p>
             <p>with {bookingDetails?.technician_name}</p>
             <p className="font-medium">
@@ -81,6 +94,9 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({
             </p>
             <p className="text-sm text-gray-600">
               Service Type: {bookingDetails?.serviceType === 'in-home' ? 'In-Home' : 'In-Store'}
+            </p>
+            <p className="text-sm text-gray-600">
+              Duration: {bookingDetails?.service_duration} minutes
             </p>
             <p className="text-lg font-bold text-pink-600">
               Total: ${bookingDetails?.totalAmount?.toFixed(2) || '0.00'}

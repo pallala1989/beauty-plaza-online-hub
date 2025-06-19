@@ -8,9 +8,10 @@ export const useBookingState = () => {
   const { user } = useAuth();
 
   const [step, setStep] = useState(1);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedService, setSelectedService] = useState("");
   const [selectedTechnician, setSelectedTechnician] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Auto-select today's date
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState("");
   const [serviceType, setServiceType] = useState("in-store");
   const [otp, setOtp] = useState("");
@@ -33,6 +34,7 @@ export const useBookingState = () => {
   useEffect(() => {
     if (location.state?.preSelectedService) {
       const service = location.state.preSelectedService;
+      setSelectedServices([service.id.toString()]);
       setSelectedService(service.id.toString());
     }
   }, [location.state]);
@@ -52,6 +54,8 @@ export const useBookingState = () => {
   return {
     step,
     setStep,
+    selectedServices,
+    setSelectedServices,
     selectedService,
     setSelectedService,
     selectedTechnician,

@@ -2,6 +2,7 @@
 export const useBookingValidation = () => {
   const isNextDisabled = (
     step: number,
+    selectedServices: string[],
     selectedService: string,
     selectedTechnician: string,
     selectedDate?: Date,
@@ -11,40 +12,39 @@ export const useBookingValidation = () => {
     customerInfo?: any,
     technicians?: any[]
   ) => {
-    console.log('isNextDisabled check - step:', step);
-    console.log('selectedService:', selectedService);
-    console.log('selectedTechnician:', selectedTechnician);
-    console.log('selectedDate:', selectedDate);
-    console.log('selectedTime:', selectedTime);
-    console.log('technicians array:', technicians);
-    
+    console.log('Validating step:', step, {
+      selectedServices,
+      selectedService,
+      selectedTechnician,
+      selectedDate,
+      selectedTime,
+      serviceType,
+      otp,
+      customerInfo,
+      technicians
+    });
+
     switch (step) {
       case 1:
-        const disabled1 = !selectedService;
-        console.log('Step 1 disabled:', disabled1);
-        return disabled1;
+        return selectedServices.length === 0;
+      
       case 2:
-        const disabled2 = !selectedTechnician;
-        console.log('Step 2 disabled:', disabled2);
-        return disabled2;
+        return !selectedTechnician || (technicians && technicians.length === 0);
+      
       case 3:
-        const disabled3 = !selectedDate || !selectedTime;
-        console.log('Step 3 disabled:', disabled3);
-        return disabled3;
+        return !selectedDate || !selectedTime;
+      
       case 4:
         if (serviceType === "in-home") {
-          const disabled4 = !otp || otp !== "1234";
-          console.log('Step 4 (in-home) disabled:', disabled4);
-          return disabled4;
-        } else {
-          const disabled4 = !customerInfo?.name || !customerInfo?.email || !customerInfo?.phone;
-          console.log('Step 4 (in-store) disabled:', disabled4);
-          return disabled4;
+          return !customerInfo?.phone || !otp || otp !== "1234";
         }
+        // For in-store, this is the final step
+        return !customerInfo?.name || !customerInfo?.email || !customerInfo?.phone;
+      
       case 5:
-        const disabled5 = !customerInfo?.name || !customerInfo?.email || !customerInfo?.phone;
-        console.log('Step 5 disabled:', disabled5);
-        return disabled5;
+        // This is only for in-home service
+        return !customerInfo?.name || !customerInfo?.email || !customerInfo?.phone || !customerInfo?.address;
+      
       default:
         return false;
     }

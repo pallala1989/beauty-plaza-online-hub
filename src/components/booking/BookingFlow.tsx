@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, User, MapPin, Phone } from "lucide-react";
-import ServiceSelection from "@/components/booking/ServiceSelection";
+import MultiServiceSelection from "@/components/booking/MultiServiceSelection";
 import TechnicianAndTypeSelection from "@/components/booking/TechnicianAndTypeSelection";
 import DateTimeSelection from "@/components/booking/DateTimeSelection";
 import PhoneVerification from "@/components/booking/PhoneVerification";
@@ -16,6 +16,7 @@ interface BookingFlowProps {
   bookedSlots: string[];
   isFetchingSlots: boolean;
   fullyBookedDays: string[];
+  selectedServices: string[];
   selectedService: string;
   selectedTechnician: string;
   selectedDate?: Date;
@@ -24,6 +25,8 @@ interface BookingFlowProps {
   loyaltyPointsToUse?: number;
   otp: string;
   otpSent: boolean;
+  onServiceToggle: (serviceId: string) => void;
+  onRemoveService: (serviceId: string) => void;
   onServiceSelect: (serviceId: string) => void;
   onTechnicianSelect: (technicianId: string) => void;
   onServiceTypeChange: (serviceType: string) => void;
@@ -46,6 +49,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   bookedSlots,
   isFetchingSlots,
   fullyBookedDays,
+  selectedServices,
   selectedService,
   selectedTechnician,
   selectedDate,
@@ -54,6 +58,8 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   loyaltyPointsToUse,
   otp,
   otpSent,
+  onServiceToggle,
+  onRemoveService,
   onServiceSelect,
   onTechnicianSelect,
   onServiceTypeChange,
@@ -68,7 +74,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   onLoyaltyPointsChange
 }) => {
   const getStepTitle = () => {
-    if (step === 1) return "Step 1: Select Service";
+    if (step === 1) return "Step 1: Select Services";
     if (step === 2) return "Step 2: Choose Technician & Type";
     if (step === 3) return "Step 3: Pick Date & Time";
     if (step === 4 && serviceType === "in-home") return "Step 4: Verify Phone";
@@ -92,12 +98,13 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
       </CardHeader>
 
       <CardContent>
-        {/* Step 1: Select Service */}
+        {/* Step 1: Select Services */}
         {step === 1 && (
-          <ServiceSelection
+          <MultiServiceSelection
             services={services}
-            selectedService={selectedService}
-            onServiceSelect={onServiceSelect}
+            selectedServices={selectedServices}
+            onServiceToggle={onServiceToggle}
+            onRemoveService={onRemoveService}
           />
         )}
 
@@ -144,6 +151,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
           <CustomerInformation
             customerInfo={customerInfo}
             serviceType={serviceType}
+            selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
             selectedService={services.find(s => s.id === selectedService)}
             selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
             selectedDate={selectedDate}

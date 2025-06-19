@@ -28,6 +28,7 @@ export const useBookingActions = (
   const { toast } = useToast();
 
   const handleNext = (
+    selectedServices: string[],
     selectedService: string,
     selectedTechnician: string,
     selectedDate?: Date,
@@ -37,9 +38,9 @@ export const useBookingActions = (
     technicians?: any[]
   ) => {
     console.log('handleNext called, current step:', step);
-    console.log('Validation result:', !isNextDisabled(step, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians));
+    console.log('Validation result:', !isNextDisabled(step, selectedServices, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians));
     
-    if (!isNextDisabled(step, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians)) {
+    if (!isNextDisabled(step, selectedServices, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians)) {
       setStep(step + 1);
     }
   };
@@ -84,7 +85,7 @@ export const useBookingActions = (
   };
 
   const handleSubmit = async (
-    selectedService: string,
+    selectedServices: string[],
     selectedTechnician: string,
     selectedDate: Date,
     selectedTime: string,
@@ -106,11 +107,12 @@ export const useBookingActions = (
     setIsLoading(true);
 
     try {
-      // Create appointment data for Spring Boot backend
-      const selectedServiceDetails = services.find(s => s.id === selectedService);
-      const servicePrice = selectedServiceDetails?.price || 0;
+      // Calculate total for all selected services
+      const selectedServiceDetails = services.filter(s => selectedServices.includes(s.id.toString()));
+      const servicesTotal = selectedServiceDetails.reduce((sum, service) => sum + service.price, 0);
+      const totalDuration = selectedServiceDetails.reduce((sum, service) => sum + service.duration, 0);
       const inHomeFee = serviceType === "in-home" ? 25 : 0;
-      const subtotal = servicePrice + inHomeFee;
+      const subtotal = servicesTotal + inHomeFee;
       
       // Apply loyalty points discount
       const loyaltyDiscount = loyaltyPointsToUse / 10; // 10 points = $1
@@ -118,7 +120,7 @@ export const useBookingActions = (
 
       const appointmentData = {
         customerId: user.id,
-        serviceId: selectedService,
+        serviceIds: selectedServices, // Multiple services
         technicianId: selectedTechnician,
         appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
         appointmentTime: selectedTime,
@@ -127,6 +129,8 @@ export const useBookingActions = (
         customerPhone: customerInfo.phone,
         customerEmail: customerInfo.email,
         totalAmount: totalAmount,
+        servicesTotal: servicesTotal,
+        totalDuration: totalDuration,
         loyaltyPointsUsed: loyaltyPointsToUse,
         loyaltyDiscount: loyaltyDiscount,
         status: 'scheduled',
@@ -152,7 +156,6 @@ export const useBookingActions = (
         console.log('Appointment created:', data);
       } catch (error) {
         console.log('Spring Boot unavailable, storing locally');
-        // Store locally for now - in real app this would be handled differently
         localStorage.setItem(`appointment_${Date.now()}`, JSON.stringify(appointmentData));
       }
 
@@ -164,10 +167,11 @@ export const useBookingActions = (
         localStorage.setItem(userPointsKey, newPoints.toString());
       }
 
+      // Send confirmation email (using first service for compatibility)
       await sendConfirmationEmail({
         services,
         technicians,
-        selectedService,
+        selectedService: selectedServices[0], // Use first service for email
         selectedTechnician,
         selectedDate,
         selectedTime,
@@ -180,15 +184,17 @@ export const useBookingActions = (
 
       setBookingDetails({
         ...appointmentData,
-        service_name: selectedServiceDetails?.name,
+        service_names: selectedServiceDetails.map(s => s.name),
+        service_name: selectedServiceDetails.map(s => s.name).join(', '), // For compatibility
         technician_name: technicians.find(t => t.id === selectedTechnician)?.name,
         selectedDate: selectedDate,
         appointment_time: selectedTime,
-        service_duration: selectedServiceDetails?.duration,
+        service_duration: totalDuration,
         customer_name: customerInfo.name,
         customer_info: customerInfo,
         loyalty_points_used: loyaltyPointsToUse,
-        loyalty_discount: loyaltyDiscount
+        loyalty_discount: loyaltyDiscount,
+        selected_services: selectedServiceDetails
       });
 
       setShowConfirmation(true);
@@ -212,7 +218,7 @@ export const useBookingActions = (
     setStep(1);
     setSelectedService("");
     setSelectedTechnician("");
-    setSelectedDate(new Date()); // Reset to today
+    setSelectedDate(new Date());
     setSelectedTime("");
     setServiceType("in-store");
     setOtp("");

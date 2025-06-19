@@ -9,6 +9,7 @@ import { useBookingFlow } from "@/hooks/booking/useBookingFlow";
 const BookOnline = () => {
   const {
     step,
+    selectedServices,
     selectedService,
     selectedTechnician,
     selectedDate,
@@ -34,6 +35,8 @@ const BookOnline = () => {
     setOtp,
     setCustomerInfo,
     setLoyaltyPointsToUse,
+    handleServiceToggle,
+    handleRemoveService,
     handleNext,
     handleBack,
     sendOtp,
@@ -80,6 +83,7 @@ const BookOnline = () => {
           bookedSlots={bookedSlots}
           isFetchingSlots={isFetchingSlots}
           fullyBookedDays={fullyBookedDays}
+          selectedServices={selectedServices}
           selectedService={selectedService}
           selectedTechnician={selectedTechnician}
           selectedDate={selectedDate}
@@ -88,6 +92,8 @@ const BookOnline = () => {
           loyaltyPointsToUse={loyaltyPointsToUse}
           otp={otp}
           otpSent={otpSent}
+          onServiceToggle={handleServiceToggle}
+          onRemoveService={handleRemoveService}
           onServiceSelect={setSelectedService}
           onTechnicianSelect={handleTechnicianSelect}
           onServiceTypeChange={handleServiceTypeChange}

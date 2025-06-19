@@ -27,6 +27,8 @@ export const useBookingFlow = () => {
   const {
     step,
     setStep,
+    selectedServices,
+    setSelectedServices,
     selectedService,
     setSelectedService,
     selectedTechnician,
@@ -108,6 +110,42 @@ export const useBookingFlow = () => {
     }
   };
 
+  const handleServiceToggle = (serviceId: string) => {
+    setSelectedServices(prev => {
+      if (prev.includes(serviceId)) {
+        // Remove service
+        const newServices = prev.filter(id => id !== serviceId);
+        // If removing the currently selected service, update selectedService
+        if (serviceId === selectedService) {
+          setSelectedService(newServices[0] || "");
+        }
+        return newServices;
+      } else {
+        // Add service (max 5)
+        if (prev.length < 5) {
+          const newServices = [...prev, serviceId];
+          // If this is the first service, make it the selected service
+          if (prev.length === 0) {
+            setSelectedService(serviceId);
+          }
+          return newServices;
+        }
+        return prev;
+      }
+    });
+  };
+
+  const handleRemoveService = (serviceId: string) => {
+    setSelectedServices(prev => {
+      const newServices = prev.filter(id => id !== serviceId);
+      // If removing the currently selected service, update selectedService
+      if (serviceId === selectedService) {
+        setSelectedService(newServices[0] || "");
+      }
+      return newServices;
+    });
+  };
+
   const bookedSlots = useMemo(() => {
     if (!selectedDate || !monthlyBookedData) return [];
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
@@ -141,7 +179,7 @@ export const useBookingFlow = () => {
   }, [currentMonth, selectedTechnician, step, fetchMonthlyBookedData]);
 
   const wrappedHandleNext = () => {
-    handleNext(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, technicians);
+    handleNext(selectedServices, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, technicians);
   };
 
   const wrappedVerifyOtp = () => {
@@ -150,16 +188,17 @@ export const useBookingFlow = () => {
 
   const wrappedHandleSubmit = async () => {
     if (selectedDate) {
-      await handleSubmit(selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, services, technicians, loyaltyPointsToUse);
+      await handleSubmit(selectedServices, selectedTechnician, selectedDate, selectedTime, serviceType, services, technicians, loyaltyPointsToUse);
     }
   };
 
   const wrappedIsNextDisabled = () => {
-    return isNextDisabled(step, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians);
+    return isNextDisabled(step, selectedServices, selectedService, selectedTechnician, selectedDate, selectedTime, serviceType, otp, customerInfo, technicians);
   };
 
   return {
     step,
+    selectedServices,
     selectedService,
     selectedTechnician,
     selectedDate,
@@ -178,6 +217,7 @@ export const useBookingFlow = () => {
     bookedSlots,
     isFetchingSlots,
     fullyBookedDays,
+    setSelectedServices,
     setSelectedService,
     setSelectedTechnician,
     handleDateSelect,
@@ -186,6 +226,8 @@ export const useBookingFlow = () => {
     setOtp,
     setCustomerInfo,
     setLoyaltyPointsToUse,
+    handleServiceToggle,
+    handleRemoveService,
     handleNext: wrappedHandleNext,
     handleBack,
     sendOtp,
