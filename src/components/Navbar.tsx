@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone, User, LogOut } from "lucide-react";
+import { Menu, Phone, User, LogOut, Settings, Calendar, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
 
@@ -35,18 +35,33 @@ const Navbar = () => {
     ...(navSettings.show_promotions ? [{ name: "Promotions", href: "/promotions" }] : []),
   ];
 
-  const navigation = [...baseNavigation, ...conditionalNavigation];
+  // Role-specific navigation
+  const getRoleSpecificNavigation = () => {
+    if (profile?.role === 'admin') {
+      return [
+        { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
+        { name: "Settings", href: "/admin-settings", icon: Settings },
+        { name: "Appointments", href: "/admin/appointments", icon: Calendar },
+        { name: "Manage Staff", href: "/admin/staff", icon: Users }
+      ];
+    }
+    if (profile?.role === 'technician') {
+      return [
+        { name: "My Schedule", href: "/technician/schedule", icon: Calendar },
+        { name: "My Appointments", href: "/technician/appointments", icon: Calendar }
+      ];
+    }
+    if (profile?.role === 'user') {
+      return [
+        { name: "My Bookings", href: "/my-bookings", icon: Calendar }
+      ];
+    }
+    return [];
+  };
 
-  // Add role-specific navigation
-  const roleSpecificNavigation = [];
-  if (profile?.role === 'admin') {
-    roleSpecificNavigation.push({ name: "Admin Dashboard", href: "/admin" });
-  }
-  if (profile?.role === 'user') {
-    roleSpecificNavigation.push({ name: "My Bookings", href: "/my-bookings" });
-  }
-
-  const allNavigation = [...navigation, ...roleSpecificNavigation];
+  const navigation = user ? 
+    [...baseNavigation, ...conditionalNavigation, ...getRoleSpecificNavigation()] :
+    [...baseNavigation, ...conditionalNavigation];
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -86,14 +101,17 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
-            {allNavigation.map((item) => (
+            {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-pink-600 ${
+                className={`text-sm font-medium transition-colors hover:text-pink-600 flex items-center ${
                   isActive(item.href) ? "text-pink-600" : "text-gray-700"
                 }`}
               >
+                {'icon' in item && item.icon && (
+                  <item.icon className="w-4 h-4 mr-1" />
+                )}
                 {item.name}
               </Link>
             ))}
@@ -115,6 +133,11 @@ const Navbar = () => {
                   <Button variant="outline" className="flex items-center">
                     <User className="w-4 h-4 mr-2" />
                     {profile?.full_name || profile?.name || 'Profile'}
+                    {profile?.role && (
+                      <span className="ml-2 text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
+                        {profile.role}
+                      </span>
+                    )}
                   </Button>
                 </Link>
                 <Button 
@@ -147,15 +170,18 @@ const Navbar = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <div className="flex flex-col space-y-4 mt-4">
-                {allNavigation.map((item) => (
+                {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`text-lg font-medium transition-colors hover:text-pink-600 ${
+                    className={`text-lg font-medium transition-colors hover:text-pink-600 flex items-center ${
                       isActive(item.href) ? "text-pink-600" : "text-gray-700"
                     }`}
                     onClick={() => setIsOpen(false)}
                   >
+                    {'icon' in item && item.icon && (
+                      <item.icon className="w-5 h-5 mr-2" />
+                    )}
                     {item.name}
                   </Link>
                 ))}
@@ -174,6 +200,11 @@ const Navbar = () => {
                         <Button variant="outline" className="w-full">
                           <User className="w-4 h-4 mr-2" />
                           {profile?.full_name || profile?.name || 'Profile'}
+                          {profile?.role && (
+                            <span className="ml-2 text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
+                              {profile.role}
+                            </span>
+                          )}
                         </Button>
                       </Link>
                       <Button 

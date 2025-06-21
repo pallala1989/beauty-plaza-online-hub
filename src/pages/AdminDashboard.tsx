@@ -16,11 +16,13 @@ import {
   Star,
   Settings
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAppointments } from "@/hooks/useAppointments";
 import AppointmentsManagement from "@/components/admin/AppointmentsManagement";
 import InvoiceGenerator from "@/components/payment/InvoiceGenerator";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { appointments, isLoading } = useAppointments();
   const [showInvoice, setShowInvoice] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -77,6 +79,27 @@ const AdminDashboard = () => {
     }
   };
 
+  // Quick action handlers
+  const handleManageStaff = () => {
+    navigate('/admin/staff');
+  };
+
+  const handleViewSchedule = () => {
+    navigate('/admin/appointments');
+  };
+
+  const handleFinancialReports = () => {
+    navigate('/admin/reports');
+  };
+
+  const handleCustomerReviews = () => {
+    navigate('/admin/reviews');
+  };
+
+  const handleSettings = () => {
+    navigate('/admin-settings');
+  };
+
   if (showInvoice && selectedAppointment) {
     return (
       <div className="print-invoice">
@@ -104,7 +127,11 @@ const AdminDashboard = () => {
             </h1>
             <p className="text-gray-600 mt-1">Manage your beauty salon operations</p>
           </div>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleSettings}
+          >
             <Settings className="w-4 h-4" />
             Settings
           </Button>
@@ -227,19 +254,35 @@ const AdminDashboard = () => {
                   <CardDescription>Common administrative tasks</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={handleManageStaff}
+                  >
                     <Users className="w-4 h-4 mr-2" />
                     Manage Staff
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={handleViewSchedule}
+                  >
                     <Calendar className="w-4 h-4 mr-2" />
                     View Schedule
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={handleFinancialReports}
+                  >
                     <DollarSign className="w-4 h-4 mr-2" />
                     Financial Reports
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={handleCustomerReviews}
+                  >
                     <Star className="w-4 h-4 mr-2" />
                     Customer Reviews
                   </Button>

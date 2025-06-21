@@ -1,3 +1,4 @@
+
 # Beauty Plaza API Specification
 
 This document provides the complete API specification for the Beauty Plaza Spring Boot backend that aligns with the current React frontend implementation.
@@ -15,6 +16,8 @@ The system supports the following admin bypass credentials for testing:
 - `admin@beautyplaza.com` / `admin123`
 - `test@admin.com` / `admin`
 - `admin` / `admin`
+
+JWT-based authentication is used for all protected endpoints.
 
 ## Core Entities
 
@@ -38,7 +41,8 @@ The system supports the following admin bypass credentials for testing:
   "name": "string",
   "specialties": "string[]",
   "is_available": "boolean",
-  "imageUrl": "string"
+  "imageUrl": "string",
+  "userId": "string (optional)"
 }
 ```
 
@@ -52,7 +56,7 @@ The system supports the following admin bypass credentials for testing:
   "appointmentDate": "string (YYYY-MM-DD)",
   "appointmentTime": "string (HH:mm)",
   "serviceType": "string (in-store|in-home)",
-  "status": "string (scheduled|confirmed|completed|cancelled)",
+  "status": "string (scheduled|confirmed|completed|cancelled|paid)",
   "notes": "string",
   "customerPhone": "string",
   "customerEmail": "string", 
@@ -62,6 +66,19 @@ The system supports the following admin bypass credentials for testing:
   "otpVerified": "boolean",
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
+}
+```
+
+### User Entity
+```json
+{
+  "id": "string",
+  "email": "string",
+  "fullName": "string",
+  "phone": "string",
+  "role": "string (admin|technician|user)",
+  "isActive": "boolean",
+  "createdAt": "timestamp"
 }
 ```
 
@@ -143,7 +160,49 @@ GET /api/health
 Response: { "status": "UP", "timestamp": "2024-01-01T00:00:00Z" }
 ```
 
-### 2. Services Management
+### 2. Authentication Endpoints
+
+#### Login
+```
+POST /api/auth/login
+Request Body: {
+  "email": "string",
+  "password": "string"
+}
+Response: {
+  "token": "jwt-token",
+  "user": User,
+  "expiresIn": "number"
+}
+```
+
+#### Register
+```
+POST /api/auth/register
+Request Body: {
+  "email": "string",
+  "password": "string",
+  "fullName": "string",
+  "phone": "string"
+}
+Response: {
+  "token": "jwt-token",
+  "user": User,
+  "expiresIn": "number"
+}
+```
+
+#### Refresh Token
+```
+POST /api/auth/refresh
+Headers: Authorization: Bearer <token>
+Response: {
+  "token": "new-jwt-token",
+  "expiresIn": "number"
+}
+```
+
+### 3. Services Management
 
 #### Get All Services
 ```
@@ -151,7 +210,7 @@ GET /api/services
 Response: Service[]
 ```
 
-#### Get Service by ID  
+#### Get Service by ID
 ```
 GET /api/services/{id}
 Response: Service
@@ -160,13 +219,15 @@ Response: Service
 #### Create Service (Admin)
 ```
 POST /api/admin/services
+Headers: Authorization: Bearer <admin-token>
 Request Body: Service (without id)
 Response: Service
 ```
 
 #### Update Service (Admin)
 ```
-PUT /api/admin/services/{id} 
+PUT /api/admin/services/{id}
+Headers: Authorization: Bearer <admin-token>
 Request Body: Service
 Response: Service
 ```
@@ -174,10 +235,11 @@ Response: Service
 #### Delete Service (Admin)
 ```
 DELETE /api/admin/services/{id}
+Headers: Authorization: Bearer <admin-token>
 Response: 204 No Content
 ```
 
-### 3. Technicians Management
+### 4. Technicians Management
 
 #### Get All Available Technicians
 ```
@@ -188,19 +250,21 @@ Response: Technician[]
 #### Get Technician by ID
 ```
 GET /api/technicians/{id}
-Response: Technician  
+Response: Technician
 ```
 
 #### Create Technician (Admin)
 ```
 POST /api/admin/technicians
+Headers: Authorization: Bearer <admin-token>
 Request Body: Technician (without id)
 Response: Technician
 ```
 
-#### Update Technician (Admin) 
+#### Update Technician (Admin)
 ```
 PUT /api/admin/technicians/{id}
+Headers: Authorization: Bearer <admin-token>
 Request Body: Technician
 Response: Technician
 ```
@@ -208,10 +272,11 @@ Response: Technician
 #### Delete Technician (Admin)
 ```
 DELETE /api/admin/technicians/{id}
+Headers: Authorization: Bearer <admin-token>
 Response: 204 No Content
 ```
 
-### 4. Appointments Management
+### 5. Appointments Management
 
 #### Get Available Time Slots
 ```
@@ -227,6 +292,7 @@ Response: {
 #### Book Appointment
 ```
 POST /api/appointments
+Headers: Authorization: Bearer <token>
 Request Body: {
   "customerId": "string",
   "serviceId": "string",
@@ -249,20 +315,23 @@ Response: Appointment
 #### Get User Appointments
 ```
 GET /api/appointments/user/{userId}
+Headers: Authorization: Bearer <token>
 Response: Appointment[]
 ```
 
 #### Get All Appointments (Admin)
 ```
 GET /api/admin/appointments?date={YYYY-MM-DD}&status={status}&technicianId={id}
+Headers: Authorization: Bearer <admin-token>
 Response: Appointment[]
 ```
 
 #### Update Appointment Status (Admin)
 ```
 PUT /api/admin/appointments/{id}/status
+Headers: Authorization: Bearer <admin-token>
 Request Body: {
-  "status": "confirmed|completed|cancelled",
+  "status": "confirmed|completed|cancelled|paid",
   "notes": "string"
 }
 Response: Appointment
@@ -271,17 +340,31 @@ Response: Appointment
 #### Cancel Appointment
 ```
 PUT /api/appointments/{id}/cancel
+Headers: Authorization: Bearer <token>
 Request Body: {
   "reason": "string"
 }
 Response: Appointment
 ```
 
-### 5. Loyalty Points Management
+#### Reschedule Appointment
+```
+PUT /api/appointments/{id}/reschedule
+Headers: Authorization: Bearer <token>
+Request Body: {
+  "appointmentDate": "YYYY-MM-DD",
+  "appointmentTime": "HH:mm",
+  "technicianId": "string"
+}
+Response: Appointment
+```
+
+### 6. Loyalty Points Management
 
 #### Redeem Points
 ```
 POST /api/loyalty/redeem
+Headers: Authorization: Bearer <token>
 Request Body: {
   "userId": "string",
   "points": "number",
@@ -301,6 +384,7 @@ Response: {
 #### Get User Points Balance
 ```
 GET /api/loyalty/balance/{userId}
+Headers: Authorization: Bearer <token>
 Response: {
   "userId": "string",
   "totalPoints": "number",
@@ -313,6 +397,7 @@ Response: {
 #### Get Points History
 ```
 GET /api/loyalty/history/{userId}
+Headers: Authorization: Bearer <token>
 Response: [
   {
     "transactionId": "string",
@@ -324,17 +409,19 @@ Response: [
 ]
 ```
 
-### 6. Settings Management (Admin)
+### 7. Settings Management (Admin)
 
 #### Get All Settings
 ```
 GET /api/admin/settings
+Headers: Authorization: Bearer <admin-token>
 Response: Settings (complete settings object)
 ```
 
 #### Update Setting
 ```
 POST /api/admin/settings/{key}
+Headers: Authorization: Bearer <admin-token>
 Request Body: {
   "value": "any"
 }
@@ -344,10 +431,10 @@ Response: { "key": "string", "value": "any" }
 #### Update Business Hours
 ```
 POST /api/admin/settings/business-hours
+Headers: Authorization: Bearer <admin-token>
 Request Body: {
   "monday": {"open": "09:00", "close": "18:00", "closed": false},
-  "tuesday": {"open": "09:00", "close": "18:00", "closed": false},
-  // ... other days
+  "tuesday": {"open": "09:00", "close": "18:00", "closed": false}
 }
 Response: { "success": true }
 ```
@@ -355,6 +442,7 @@ Response: { "success": true }
 #### Update Navigation Settings
 ```
 POST /api/admin/settings/navigation
+Headers: Authorization: Bearer <admin-token>
 Request Body: {
   "showPromotions": true,
   "showLoyalty": true,
@@ -363,6 +451,63 @@ Request Body: {
 }
 Response: { "success": true }
 ```
+
+### 8. User Management (Admin)
+
+#### Get All Users
+```
+GET /api/admin/users
+Headers: Authorization: Bearer <admin-token>
+Response: User[]
+```
+
+#### Get User by ID
+```
+GET /api/admin/users/{id}
+Headers: Authorization: Bearer <admin-token>
+Response: User
+```
+
+#### Update User Role
+```
+PUT /api/admin/users/{id}/role
+Headers: Authorization: Bearer <admin-token>
+Request Body: {
+  "role": "admin|technician|user"
+}
+Response: User
+```
+
+#### Deactivate User
+```
+PUT /api/admin/users/{id}/deactivate
+Headers: Authorization: Bearer <admin-token>
+Response: { "success": true }
+```
+
+## Business Logic Requirements
+
+### Appointment Status Workflow
+1. **scheduled** → **confirmed** → **completed** → **paid**
+2. **scheduled** → **cancelled**
+3. **confirmed** → **cancelled**
+
+### Payment Status Restrictions
+- Appointments with status `paid`, `completed`, or `cancelled` cannot be:
+  - Rescheduled
+  - Cancelled
+  - Have payment processed again
+- Only appointments with status `confirmed`, `scheduled`, or `completed` can have payments processed
+- Once an appointment is marked as `paid`, no modifications are allowed
+
+### Loyalty Points Calculation
+- Points earned: `totalAmount * pointsPerDollar`
+- Points redeemed: `pointsUsed / redemptionRate = dollarDiscount`
+- Minimum redemption: `minRedemption` points
+
+### Service Type Fees
+- In-home services include additional `inHomeFee`
+- Total calculation: `servicePrice + (serviceType === 'in-home' ? inHomeFee : 0) - loyaltyDiscount`
 
 ## Error Responses
 
@@ -374,7 +519,8 @@ All endpoints return consistent error responses:
   "status": 400,
   "error": "Bad Request", 
   "message": "Validation failed",
-  "path": "/api/appointments"
+  "path": "/api/appointments",
+  "details": ["specific error messages"]
 }
 ```
 
@@ -387,165 +533,102 @@ All endpoints return consistent error responses:
 - `401` - Unauthorized
 - `403` - Forbidden
 - `404` - Not Found
+- `409` - Conflict (e.g., appointment time slot already booked)
+- `422` - Unprocessable Entity (business rule violation)
 - `500` - Internal Server Error
 
-## Database Schema Recommendations
+## Security Requirements
 
-### services table
-```sql
-CREATE TABLE services (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  price DECIMAL(10,2) NOT NULL,
-  duration INTEGER NOT NULL,
-  image_url VARCHAR(500),
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+### JWT Token Structure
+```json
+{
+  "sub": "userId",
+  "email": "user@example.com",
+  "role": "admin|technician|user",
+  "iat": "timestamp",
+  "exp": "timestamp"
+}
 ```
 
-### technicians table  
-```sql
-CREATE TABLE technicians (
-  id VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  specialties JSON,
-  is_available BOOLEAN DEFAULT TRUE,
-  image_url VARCHAR(500),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+### Role-Based Access Control
+- **Public**: Health check, services list, technicians list, time slots
+- **Authenticated**: Book appointment, view own appointments, cancel own appointments
+- **Admin**: All endpoints, user management, settings management
+- **Technician**: View assigned appointments, update appointment status
 
-### appointments table
-```sql
-CREATE TABLE appointments (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  customer_id VARCHAR(255) NOT NULL,
-  service_id BIGINT NOT NULL,
-  technician_id VARCHAR(255) NOT NULL,
-  appointment_date DATE NOT NULL,
-  appointment_time TIME NOT NULL,
-  service_type ENUM('in-store', 'in-home') NOT NULL,
-  status ENUM('scheduled', 'confirmed', 'completed', 'cancelled') DEFAULT 'scheduled',
-  notes TEXT,
-  customer_phone VARCHAR(50),
-  customer_email VARCHAR(255),
-  total_amount DECIMAL(10,2),
-  loyalty_points_used INTEGER DEFAULT 0,
-  loyalty_discount DECIMAL(10,2) DEFAULT 0.00,
-  otp_verified BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (service_id) REFERENCES services(id),
-  FOREIGN KEY (technician_id) REFERENCES technicians(id)
-);
-```
+### Admin Bypass Credentials
+For testing purposes, these credentials bypass normal authentication:
+- `admin@beautyplaza.com` / `admin123`
+- `test@admin.com` / `admin`
+- `admin` / `admin`
 
-### loyalty_points table
-```sql
-CREATE TABLE loyalty_points (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id VARCHAR(255) NOT NULL,
-  transaction_type ENUM('earned', 'redeemed') NOT NULL,
-  points INTEGER NOT NULL,
-  description VARCHAR(500),
-  appointment_id BIGINT NULL,
-  redemption_method ENUM('gift_card', 'bank_credit') NULL,
-  bank_account VARCHAR(255) NULL,
-  routing_number VARCHAR(20) NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (appointment_id) REFERENCES appointments(id)
-);
-```
+## Database Schema
 
-### settings table
-```sql
-CREATE TABLE settings (
-  setting_key VARCHAR(255) PRIMARY KEY,
-  setting_value JSON NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+### Key Relationships
+- `appointments.customer_id` → `users.id`
+- `appointments.service_id` → `services.id`
+- `appointments.technician_id` → `technicians.id`
+- `loyalty_points.user_id` → `users.id`
+- `loyalty_points.appointment_id` → `appointments.id`
+- `technicians.user_id` → `users.id` (optional)
+
+### Indexes Required
+- `appointments(appointment_date, appointment_time, technician_id)` - for availability checking
+- `appointments(customer_id, created_at)` - for user appointment history
+- `loyalty_points(user_id, created_at)` - for points history
+- `users(email)` - for authentication
+- `users(role)` - for role-based queries
 
 ## CORS Configuration
 
-Make sure your Spring Boot application includes CORS configuration:
+The API should accept requests from:
+- `http://localhost:3000` (React development server)
+- `https://preview--beauty-plaza-online-hub.lovable.app` (Lovable preview)
 
-```java
-@CrossOrigin(origins = {"http://localhost:3000", "https://preview--beauty-plaza-online-hub.lovable.app"})
+## Rate Limiting (Recommended)
+
+- Authentication endpoints: 5 requests per minute per IP
+- Booking endpoints: 10 requests per minute per user
+- General API: 100 requests per minute per user
+
+## Caching Strategy (Recommended)
+
+- Settings: Cache for 5 minutes
+- Services list: Cache for 30 minutes
+- Technicians list: Cache for 15 minutes
+- Available time slots: Cache for 2 minutes
+
+## Sample Data Requirements
+
+### Default Admin User
+```sql
+INSERT INTO users (id, email, password, full_name, role, is_active) 
+VALUES ('admin-1', 'admin@beautyplaza.com', '$2a$10$hashed_password', 'Admin User', 'admin', true);
 ```
 
-## Sample Data
-
-### Services
-```json
-[
-  {
-    "id": 1,
-    "name": "Classic Facial",
-    "description": "Deep cleansing facial with extractions",
-    "price": 75.00,
-    "duration": 60,
-    "imageUrl": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881",
-    "isActive": true
-  },
-  {
-    "id": 2, 
-    "name": "Anti-Aging Treatment",
-    "description": "Advanced anti-aging facial with collagen boost",
-    "price": 120.00,
-    "duration": 90,
-    "imageUrl": "https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae",
-    "isActive": true
-  }
-]
+### Sample Services
+```sql
+INSERT INTO services (name, description, price, duration, image_url, is_active) VALUES
+('Classic Facial', 'Deep cleansing facial with extractions', 75.00, 60, 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881', true),
+('Anti-Aging Treatment', 'Advanced anti-aging facial', 120.00, 90, 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae', true),
+('Classic Manicure', 'Professional nail care and polish', 35.00, 45, 'https://images.unsplash.com/photo-1604654894610-df63bc536371', true);
 ```
 
-### Technicians
-```json
-[
-  {
-    "id": "1",
-    "name": "Sarah Johnson", 
-    "specialties": ["Facial", "Anti-Aging"],
-    "is_available": true,
-    "imageUrl": "https://images.unsplash.com/photo-1594824092-b247a3b34ffc"
-  },
-  {
-    "id": "2",
-    "name": "Emily Davis",
-    "specialties": ["Skincare", "Facial"],
-    "is_available": true, 
-    "imageUrl": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d"
-  }
-]
+### Sample Technicians
+```sql
+INSERT INTO technicians (id, name, specialties, is_available, image_url) VALUES
+('tech-1', 'Sarah Johnson', '["Facial", "Anti-Aging"]', true, 'https://images.unsplash.com/photo-1594824092-b247a3b34ffc'),
+('tech-2', 'Emily Davis', '["Skincare", "Facial"]', true, 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d'),
+('tech-3', 'Lisa Chen', '["Manicure", "Pedicure"]', true, 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f');
 ```
 
-## New Features Added
+### Default Settings
+```sql
+INSERT INTO settings (setting_key, setting_value) VALUES
+('loyalty_settings', '{"pointsPerDollar": 10, "minRedemption": 100, "redemptionRate": 10}'),
+('referral_amounts', '{"referrerCredit": 10, "referredDiscount": 10}'),
+('in_home_fee', '25'),
+('navigation_settings', '{"showPromotions": true, "showLoyalty": true, "showGiftCards": true, "showReferFriend": true}');
+```
 
-### Navigation Control
-- Admin can toggle visibility of Promotions, Loyalty, Gift Cards, and Refer Friend menu items
-- Changes reflect immediately in the navigation bar
-
-### Enhanced Booking Flow
-- Auto-selection of today's date when reaching date/time step
-- Auto-selection of first available time slot for selected date
-- Service images are properly loaded and cached locally
-- Loyalty points integration in booking with discount calculation
-
-### Loyalty Points Enhancements
-- Bank account redemption with account number and routing number validation
-- Gift card and bank credit redemption options
-- Points usage during booking process with real-time total calculation
-- Enhanced validation and error handling
-
-### Admin Dashboard Features
-- Full CRUD operations for Services (Create, Read, Update, Delete)
-- Full CRUD operations for Technicians
-- Enhanced appointment management with detailed customer information
-- Comprehensive settings management including business hours, notifications, payment options
-- Image URL management for services with proper validation
+This specification provides complete guidance for implementing a Spring Boot backend that fully supports the Beauty Plaza frontend application with all required business logic, security, and data management capabilities.

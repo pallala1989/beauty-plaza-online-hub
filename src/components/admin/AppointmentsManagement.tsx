@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,9 @@ import {
   Trash2, 
   CreditCard,
   Phone,
-  MapPin
+  MapPin,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import PaymentStep from "@/components/booking/PaymentStep";
 
@@ -68,12 +71,34 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
         return "bg-red-100 text-red-800";
       case 'completed':
         return "bg-blue-100 text-blue-800";
+      case 'paid':
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
+  // Check if appointment can be modified based on status
+  const canModifyAppointment = (appointment: any) => {
+    const restrictedStatuses = ['paid', 'completed', 'cancelled'];
+    return !restrictedStatuses.includes(appointment.status);
+  };
+
+  // Check if payment can be processed
+  const canProcessPayment = (appointment: any) => {
+    const allowedStatuses = ['confirmed', 'scheduled', 'completed'];
+    return allowedStatuses.includes(appointment.status) && appointment.status !== 'paid';
+  };
+
   const handlePayment = (appointment: any) => {
+    if (!canProcessPayment(appointment)) {
+      toast({
+        title: "Payment Not Available",
+        description: "Payment cannot be processed for this appointment status.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedAppointment(appointment);
     setShowPayment(true);
   };
@@ -98,6 +123,14 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
   };
 
   const handleReschedule = (appointment: any) => {
+    if (!canModifyAppointment(appointment)) {
+      toast({
+        title: "Cannot Reschedule",
+        description: "This appointment cannot be rescheduled due to its current status.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedAppointment(appointment);
     setRescheduleData({
       date: appointment.appointment_date,
@@ -119,12 +152,30 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
     refetch();
   };
 
-  const handleCancel = (appointmentId: string) => {
+  const handleCancel = (appointmentId: string, appointment: any) => {
+    if (!canModifyAppointment(appointment)) {
+      toast({
+        title: "Cannot Cancel",
+        description: "This appointment cannot be cancelled due to its current status.",
+        variant: "destructive",
+      });
+      return;
+    }
     // In real app, this would call an API to cancel the appointment
     console.log('Cancelling appointment:', appointmentId);
     toast({
       title: "Appointment Cancelled",
       description: "The appointment has been cancelled.",
+    });
+    refetch();
+  };
+
+  const handleStatusUpdate = (appointmentId: string, newStatus: string) => {
+    // In real app, this would call an API to update the appointment status
+    console.log('Updating appointment status:', appointmentId, newStatus);
+    toast({
+      title: "Status Updated",
+      description: `Appointment status updated to ${newStatus}.`,
     });
     refetch();
   };
@@ -228,88 +279,124 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                     {appointment.status}
                   </Badge>
                   
-                  <Button
-                    size="sm"
-                    onClick={() => handlePayment(appointment)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CreditCard className="w-4 h-4 mr-1" />
-                    Payment
-                  </Button>
-
-                  <Dialog open={showReschedule} onOpenChange={setShowReschedule}>
-                    <DialogTrigger asChild>
+                  {/* Admin only - Status update buttons */}
+                  {userRole === 'admin' && canModifyAppointment(appointment) && (
+                    <div className="flex space-x-1">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleReschedule(appointment)}
+                        onClick={() => handleStatusUpdate(appointment.id, 'confirmed')}
+                        className="text-green-600 border-green-200"
                       >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Reschedule
+                        <CheckCircle className="w-4 h-4" />
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Reschedule Appointment</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="reschedule-date">New Date</Label>
-                          <Input
-                            id="reschedule-date"
-                            type="date"
-                            value={rescheduleData.date}
-                            onChange={(e) => setRescheduleData({...rescheduleData, date: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="reschedule-time">New Time</Label>
-                          <Input
-                            id="reschedule-time"
-                            type="time"
-                            value={rescheduleData.time}
-                            onChange={(e) => setRescheduleData({...rescheduleData, time: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="reschedule-technician">Technician</Label>
-                          <Select
-                            value={rescheduleData.technician}
-                            onValueChange={(value) => setRescheduleData({...rescheduleData, technician: value})}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                        className="text-blue-600 border-blue-200"
+                      >
+                        Complete
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {canProcessPayment(appointment) && (
+                    <Button
+                      size="sm"
+                      onClick={() => handlePayment(appointment)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CreditCard className="w-4 h-4 mr-1" />
+                      Payment
+                    </Button>
+                  )}
+
+                  {canModifyAppointment(appointment) && (
+                    <>
+                      <Dialog open={showReschedule} onOpenChange={setShowReschedule}>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReschedule(appointment)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select technician" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {technicians.map((tech) => (
-                                <SelectItem key={tech.id} value={tech.name}>
-                                  {tech.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setShowReschedule(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleRescheduleSubmit}>
+                            <Edit className="w-4 h-4 mr-1" />
                             Reschedule
                           </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Reschedule Appointment</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="reschedule-date">New Date</Label>
+                              <Input
+                                id="reschedule-date"
+                                type="date"
+                                value={rescheduleData.date}
+                                onChange={(e) => setRescheduleData({...rescheduleData, date: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="reschedule-time">New Time</Label>
+                              <Input
+                                id="reschedule-time"
+                                type="time"
+                                value={rescheduleData.time}
+                                onChange={(e) => setRescheduleData({...rescheduleData, time: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="reschedule-technician">Technician</Label>
+                              <Select
+                                value={rescheduleData.technician}
+                                onValueChange={(value) => setRescheduleData({...rescheduleData, technician: value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select technician" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {technicians.map((tech) => (
+                                    <SelectItem key={tech.id} value={tech.name}>
+                                      {tech.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="outline" onClick={() => setShowReschedule(false)}>
+                                Cancel
+                              </Button>
+                              <Button onClick={handleRescheduleSubmit}>
+                                Reschedule
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCancel(appointment.id)}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Cancel
-                  </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCancel(appointment.id, appointment)}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+
+                  {!canModifyAppointment(appointment) && (
+                    <span className="text-sm text-gray-500">
+                      {appointment.status === 'paid' ? 'Paid - No changes allowed' : 
+                       appointment.status === 'completed' ? 'Completed' : 
+                       'Cancelled'}
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>
