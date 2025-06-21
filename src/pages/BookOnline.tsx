@@ -54,8 +54,8 @@ const BookOnline = () => {
     handleMonthChange
   } = useBookingFlow();
 
-  // Check if user is admin/technician
-  const canUseAdminMode = user?.role === 'admin' || user?.role === 'technician';
+  // Check if user is admin/technician - fixed role comparison
+  const canUseAdminMode = user?.role === 'admin';
 
   const maxStep = React.useMemo(() => {
     if (isAdminMode) {
