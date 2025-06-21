@@ -11,7 +11,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
-  const { settings } = useSettings();
+  const { settings, isLoading } = useSettings();
 
   // Get navigation settings with defaults
   const navSettings = settings?.navigation_settings || {
@@ -55,6 +55,24 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  // Show loading state if settings are still loading
+  if (isLoading) {
+    return (
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                Beauty Plaza
+              </div>
+            </Link>
+            <div className="text-sm text-gray-500">Loading...</div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,7 +103,7 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center space-x-4">
             <Button
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
-              onClick={() => window.open("tel:+19039210271", "_self")}
+              onClick={() => window.open(`tel:${settings?.contact_phone || '+19039210271'}`, "_self")}
             >
               <Phone className="w-4 h-4 mr-2" />
               Call Now
@@ -144,7 +162,7 @@ const Navbar = () => {
                 <div className="pt-4 space-y-2">
                   <Button
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                    onClick={() => window.open("tel:+19039210271", "_self")}
+                    onClick={() => window.open(`tel:${settings?.contact_phone || '+19039210271'}`, "_self")}
                   >
                     <Phone className="w-4 h-4 mr-2" />
                     Call Now

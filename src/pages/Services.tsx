@@ -1,15 +1,16 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, DollarSign, Star } from "lucide-react";
+import { Clock, DollarSign, Star, StarOff } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { useNavigate } from "react-router-dom";
 
 const Services = () => {
   const { services, isLoading } = useServices();
   const navigate = useNavigate();
+  const [ratings, setRatings] = useState<{ [key: string]: number }>({});
 
   const handleBookService = (service: any) => {
     console.log('Booking service:', service);
@@ -30,6 +31,41 @@ const Services = () => {
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
     target.src = "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+  };
+
+  const handleRating = (serviceId: string, rating: number) => {
+    setRatings(prev => ({
+      ...prev,
+      [serviceId]: rating
+    }));
+    // Here you would typically save the rating to your backend
+    console.log(`Rated service ${serviceId} with ${rating} stars`);
+  };
+
+  const renderStars = (serviceId: string, currentRating: number = 4.9) => {
+    const userRating = ratings[serviceId] || 0;
+    const displayRating = userRating || currentRating;
+    
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            onClick={() => handleRating(serviceId, star)}
+            className="hover:scale-110 transition-transform"
+          >
+            {star <= displayRating ? (
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+            ) : (
+              <StarOff className="w-4 h-4 text-gray-300" />
+            )}
+          </button>
+        ))}
+        <span className="text-sm text-gray-600 ml-1">
+          ({userRating ? 'Your rating' : displayRating.toFixed(1)})
+        </span>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -70,10 +106,6 @@ const Services = () => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-xl">{service.name}</CardTitle>
-                  <Badge variant="secondary" className="ml-2">
-                    <Star className="w-3 h-3 mr-1" />
-                    4.9
-                  </Badge>
                 </div>
                 <CardDescription className="text-sm text-gray-600 line-clamp-2">
                   {service.description}
@@ -83,13 +115,18 @@ const Services = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center text-pink-600">
-                    <DollarSign className="w-4 h-4 mr-1" />
                     <span className="font-bold text-lg">${service.price}</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Clock className="w-4 h-4 mr-1" />
                     <span className="text-sm">{service.duration} min</span>
                   </div>
+                </div>
+
+                {/* Service Rating */}
+                <div className="border-t pt-3">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Rate this service:</div>
+                  {renderStars(service.id)}
                 </div>
 
                 <Button 

@@ -79,33 +79,33 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
           
           return (
             <div key={service.id} className="relative">
-              <Label
-                htmlFor={`service-${service.id}`}
-                className={`cursor-pointer block ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Card className={`h-full border-2 transition-all ${
-                  isSelected 
-                    ? 'border-pink-500 bg-pink-50' 
-                    : isDisabled 
-                    ? 'border-gray-200 bg-gray-50' 
-                    : 'border-gray-200 hover:border-pink-300'
-                }`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <Checkbox
-                        id={`service-${service.id}`}
-                        checked={isSelected}
-                        onCheckedChange={() => !isDisabled && onServiceToggle(service.id.toString())}
-                        disabled={isDisabled}
-                        className="mt-1"
-                      />
-                      {isSelected && (
-                        <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                          Selected
-                        </span>
-                      )}
-                    </div>
-                    
+              <Card className={`h-full border-2 transition-all cursor-pointer ${
+                isSelected 
+                  ? 'border-pink-500 bg-pink-50' 
+                  : isDisabled 
+                  ? 'border-gray-200 bg-gray-50' 
+                  : 'border-gray-200 hover:border-pink-300'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <Checkbox
+                      id={`service-${service.id}`}
+                      checked={isSelected}
+                      onCheckedChange={() => !isDisabled && onServiceToggle(service.id.toString())}
+                      disabled={isDisabled}
+                      className="mt-1"
+                    />
+                    {isSelected && (
+                      <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                        Selected
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div 
+                    className="cursor-pointer"
+                    onClick={() => !isDisabled && onServiceToggle(service.id.toString())}
+                  >
                     <div className="aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
                       <img
                         src={service.image_url || service.imageUrl || "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"}
@@ -124,9 +124,9 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
                       <span className="font-bold text-pink-600">${service.price}</span>
                       <span className="text-sm text-gray-500">{service.duration} min</span>
                     </div>
-                  </CardContent>
-                </Card>
-              </Label>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           );
         })}

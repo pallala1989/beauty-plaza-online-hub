@@ -12,6 +12,15 @@ interface Settings {
   contact_email?: string;
   contact_address_line1?: string;
   contact_address_line2?: string;
+  business_hours?: {
+    monday: { open: string; close: string; closed: boolean };
+    tuesday: { open: string; close: string; closed: boolean };
+    wednesday: { open: string; close: string; closed: boolean };
+    thursday: { open: string; close: string; closed: boolean };
+    friday: { open: string; close: string; closed: boolean };
+    saturday: { open: string; close: string; closed: boolean };
+    sunday: { open: string; close: string; closed: boolean };
+  };
   navigation_settings?: {
     show_promotions: boolean;
     show_loyalty: boolean;
@@ -30,6 +39,15 @@ const defaultSettings: Settings = {
   contact_email: 'info@beautyplaza.com',
   contact_address_line1: '2604 Jacqueline Dr',
   contact_address_line2: 'Wilmington, DE - 19810',
+  business_hours: {
+    monday: { open: '09:00', close: '18:00', closed: false },
+    tuesday: { open: '09:00', close: '18:00', closed: false },
+    wednesday: { open: '09:00', close: '18:00', closed: false },
+    thursday: { open: '09:00', close: '18:00', closed: false },
+    friday: { open: '09:00', close: '18:00', closed: false },
+    saturday: { open: '09:00', close: '17:00', closed: false },
+    sunday: { open: '10:00', close: '16:00', closed: false }
+  },
   navigation_settings: {
     show_promotions: true,
     show_loyalty: true,
@@ -75,9 +93,9 @@ export const useSettings = () => {
           settingsMap[setting.key] = setting.value;
         });
         
-        setSettings(settingsMap);
+        setSettings({ ...defaultSettings, ...settingsMap });
       } else {
-        setSettings(data);
+        setSettings({ ...defaultSettings, ...data });
       }
     } catch (error) {
       console.log('Supabase unavailable, using default settings:', error);
@@ -130,6 +148,11 @@ export const useSettings = () => {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Set up an interval to refresh settings every 30 seconds
+    const interval = setInterval(fetchSettings, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   return { settings, isLoading, updateSetting, refetch: fetchSettings };
