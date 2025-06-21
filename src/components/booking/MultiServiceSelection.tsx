@@ -83,7 +83,7 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
                 isSelected 
                   ? 'border-pink-500 bg-pink-50' 
                   : isDisabled 
-                  ? 'border-gray-200 bg-gray-50' 
+                  ? 'border-gray-200 bg-gray-50 opacity-60' 
                   : 'border-gray-200 hover:border-pink-300'
               }`}>
                 <CardContent className="p-4">
@@ -103,7 +103,7 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
                   </div>
                   
                   <div 
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
                     onClick={() => !isDisabled && onServiceToggle(service.id.toString())}
                   >
                     <div className="aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
