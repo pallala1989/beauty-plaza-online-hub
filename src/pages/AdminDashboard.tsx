@@ -41,9 +41,9 @@ const AdminDashboard = () => {
     const invoiceData = {
       id: appointment.id,
       services: [{
-        name: appointment.services?.name || 'Service',
+        name: appointment.service?.name || 'Service',
         price: appointment.total_amount || 0,
-        duration: appointment.services?.duration || 60
+        duration: appointment.service?.duration || 60
       }],
       subtotal: appointment.total_amount || 0,
       tip: 0,
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
         <InvoiceGenerator
           invoiceData={selectedAppointment.invoiceData}
           customerInfo={{
-            name: selectedAppointment.customer_id || 'Customer',
+            name: 'Customer',
             email: selectedAppointment.customer_email || '',
             phone: selectedAppointment.customer_phone || ''
           }}
@@ -194,13 +194,13 @@ const AdminDashboard = () => {
                         <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium">{appointment.customer_id || 'Customer'}</span>
+                              <span className="font-medium">Customer</span>
                               <Badge className={getStatusColor(appointment.status)}>
                                 {appointment.status}
                               </Badge>
                             </div>
                             <div className="text-sm text-gray-600 mt-1">
-                              {appointment.services?.name} • {appointment.appointment_date} at {appointment.appointment_time}
+                              {appointment.service?.name} • {appointment.appointment_date} at {appointment.appointment_time}
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
