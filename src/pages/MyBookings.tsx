@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { CalendarDays, Clock, User, MapPin, Home } from 'lucide-react';
+import RescheduleAppointment from '@/components/profile/RescheduleAppointment';
 
 interface Appointment {
   id: string;
@@ -30,6 +32,7 @@ interface Appointment {
 
 const MyBookings = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,6 +67,31 @@ const MyBookings = () => {
       console.error('Error fetching appointments:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCancel = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Appointment Cancelled",
+        description: "Your appointment has been successfully cancelled.",
+      });
+      
+      fetchAppointments(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error cancelling appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -220,12 +248,22 @@ const MyBookings = () => {
                   )}
                   
                   <div className="mt-4 flex space-x-2">
-                    {appointment.status === 'scheduled' && (
+                    {(appointment.status === 'scheduled' || appointment.status === 'confirmed') && (
                       <>
-                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                          Reschedule
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                        <RescheduleAppointment
+                          appointmentId={appointment.id}
+                          currentDate={appointment.appointment_date}
+                          currentTime={appointment.appointment_time}
+                          currentTechnician={appointment.technicians?.name || ''}
+                          serviceName={appointment.services?.name || ''}
+                          onRescheduleSuccess={fetchAppointments}
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleCancel(appointment.id)}
+                        >
                           Cancel
                         </Button>
                       </>

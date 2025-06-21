@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +69,75 @@ Thank you for choosing Beauty Plaza!
   };
 
   const handlePrint = () => {
-    window.print();
+    // Create a new window with just the invoice content
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice ${invoiceData.id}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { text-align: center; background: linear-gradient(to right, #ec4899, #9333ea); color: white; padding: 20px; margin-bottom: 20px; }
+              .section { margin: 20px 0; }
+              .flex { display: flex; justify-content: space-between; }
+              .service-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+              .total { font-weight: bold; font-size: 18px; }
+              @media print { .no-print { display: none; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Beauty Plaza</h1>
+              <p>Invoice</p>
+            </div>
+            <div class="section">
+              <div class="flex">
+                <div>
+                  <h3>Invoice Details</h3>
+                  <p>Invoice #: ${invoiceData.id}</p>
+                  <p>Date: ${new Date(invoiceData.timestamp).toLocaleDateString()}</p>
+                  <p>Time: ${new Date(invoiceData.timestamp).toLocaleTimeString()}</p>
+                </div>
+                <div>
+                  <h3>Customer</h3>
+                  <p>${customerInfo?.name || 'Walk-in Customer'}</p>
+                  ${customerInfo?.email ? `<p>${customerInfo.email}</p>` : ''}
+                  ${customerInfo?.phone ? `<p>${customerInfo.phone}</p>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="section">
+              <h3>Services Provided</h3>
+              ${invoiceData.services.map(service => `
+                <div class="service-item flex">
+                  <div>
+                    <span style="font-weight: 500">${service.name}</span>
+                    <span style="color: #666; font-size: 14px"> (${service.duration} minutes)</span>
+                  </div>
+                  <span style="font-weight: 600">$${service.price.toFixed(2)}</span>
+                </div>
+              `).join('')}
+            </div>
+            <div class="section">
+              <h3>Payment Summary</h3>
+              <div class="flex"><span>Subtotal:</span><span>$${invoiceData.subtotal.toFixed(2)}</span></div>
+              ${invoiceData.tip > 0 ? `<div class="flex"><span>Tip:</span><span>$${invoiceData.tip.toFixed(2)}</span></div>` : ''}
+              ${invoiceData.pointsUsed > 0 ? `<div class="flex" style="color: green"><span>Loyalty Points Discount (${invoiceData.pointsUsed} points):</span><span>-$${invoiceData.pointsDiscount.toFixed(2)}</span></div>` : ''}
+              <hr>
+              <div class="flex total"><span>Total Paid:</span><span style="color: #ec4899">$${invoiceData.total.toFixed(2)}</span></div>
+              <div class="flex"><span>Payment Method:</span><span>${invoiceData.paymentMethod.toUpperCase()}</span></div>
+            </div>
+            <div class="section" style="text-align: center; color: #666; font-size: 14px;">
+              <p>Thank you for choosing Beauty Plaza!</p>
+              <p>We appreciate your business and look forward to serving you again.</p>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   const handleEmailInvoice = () => {
@@ -163,7 +232,7 @@ Thank you for choosing Beauty Plaza!
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-center pt-4">
+          <div className="flex gap-3 justify-center pt-4 no-print">
             <Button variant="outline" onClick={handleDownload} className="flex items-center">
               <Download className="w-4 h-4 mr-2" />
               Download

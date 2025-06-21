@@ -12,22 +12,6 @@ const Services = () => {
   const navigate = useNavigate();
   const [ratings, setRatings] = useState<{ [key: string]: number }>({});
 
-  const handleBookService = (service: any) => {
-    console.log('Booking service:', service);
-    navigate("/book-online", { 
-      state: { 
-        preSelectedService: {
-          id: service.id,
-          name: service.name,
-          price: service.price,
-          duration: service.duration,
-          description: service.description,
-          image_url: service.image_url
-        }
-      } 
-    });
-  };
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
     target.src = "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
@@ -88,6 +72,14 @@ const Services = () => {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Discover our premium beauty services designed to make you look and feel your best
           </p>
+          <div className="mt-6">
+            <Button 
+              onClick={() => navigate('/book-online')}
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-3"
+            >
+              Book an Appointment
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -128,13 +120,6 @@ const Services = () => {
                   <div className="text-sm font-medium text-gray-700 mb-2">Rate this service:</div>
                   {renderStars(service.id)}
                 </div>
-
-                <Button 
-                  onClick={() => handleBookService(service)}
-                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
-                >
-                  Book This Service
-                </Button>
               </CardContent>
             </Card>
           ))}

@@ -31,7 +31,7 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
   const totalPrice = selectedServiceDetails.reduce((sum, service) => sum + service.price, 0);
   const totalDuration = selectedServiceDetails.reduce((sum, service) => sum + service.duration, 0);
 
-  // Debug logging to help understand the issue
+  // Debug logging to help understand the service selection
   useEffect(() => {
     console.log('MultiServiceSelection - selectedServices:', selectedServices);
     console.log('MultiServiceSelection - services:', services.map(s => ({ id: s.id, name: s.name })));
@@ -84,12 +84,6 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
           const serviceIdString = service.id.toString();
           const isSelected = selectedServices.includes(serviceIdString);
           const isDisabled = !isSelected && selectedServices.length >= 5;
-          
-          console.log(`Service ${service.name} (ID: ${serviceIdString}):`, {
-            isSelected,
-            selectedServices,
-            includes: selectedServices.includes(serviceIdString)
-          });
           
           return (
             <div key={service.id} className="relative">

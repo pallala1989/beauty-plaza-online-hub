@@ -56,7 +56,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
   // Filter appointments based on user role
   const filteredAppointments = userRole === 'admin' 
     ? appointments 
-    : appointments.filter(apt => apt.technician?.id === userId);
+    : appointments.filter(apt => apt.technicians?.id === userId);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,7 +103,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
     setRescheduleData({
       date: appointment.appointment_date,
       time: appointment.appointment_time,
-      technician: appointment.technician?.id || ''
+      technician: appointment.technicians?.id || ''
     });
     setShowReschedule(true);
   };
@@ -140,7 +140,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
           <PaymentStep
             selectedServices={[mockServices[0]]} // Mock service data
             customerInfo={{
-              name: selectedAppointment.customer_name || 'Customer',
+              name: selectedAppointment.customer_id || 'Customer',
               email: selectedAppointment.customer_email || '',
               phone: selectedAppointment.customer_phone || ''
             }}
@@ -182,7 +182,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                     <div className="flex items-center">
                       <User className="w-4 h-4 mr-2 text-gray-500" />
                       <span className="font-medium">
-                        {appointment.customer_name || 'Customer'}
+                        {appointment.customer_id || 'Customer'}
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -198,11 +198,11 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                       <span className="text-sm text-gray-600">Service:</span>
-                      <span className="ml-1 font-medium">{appointment.service?.name}</span>
+                      <span className="ml-1 font-medium">{appointment.services?.name}</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-sm text-gray-600">Technician:</span>
-                      <span className="ml-1 font-medium">{appointment.technician?.name}</span>
+                      <span className="ml-1 font-medium">{appointment.technicians?.name}</span>
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="w-4 h-4 mr-1 text-gray-500" />
