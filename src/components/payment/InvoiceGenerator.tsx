@@ -1,9 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Download, Mail, Print } from "lucide-react";
+import { Download, Mail, Printer } from "lucide-react";
 
 interface InvoiceData {
   id: string;
@@ -170,7 +169,7 @@ Thank you for choosing Beauty Plaza!
               Download
             </Button>
             <Button variant="outline" onClick={handlePrint} className="flex items-center">
-              <Print className="w-4 h-4 mr-2" />
+              <Printer className="w-4 h-4 mr-2" />
               Print
             </Button>
             {customerInfo?.email && (
