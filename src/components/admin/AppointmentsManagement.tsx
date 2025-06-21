@@ -53,10 +53,10 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
     { id: '3', name: 'Bridal Makeup', price: 150, duration: 90 }
   ];
 
-  // Filter appointments based on user role
+  // Filter appointments based on user role - since technician only has name, we'll filter by name
   const filteredAppointments = userRole === 'admin' 
     ? appointments 
-    : appointments.filter(apt => apt.technician?.id === userId);
+    : appointments.filter(apt => apt.technician?.name === userId);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,7 +103,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
     setRescheduleData({
       date: appointment.appointment_date,
       time: appointment.appointment_time,
-      technician: appointment.technician?.id || ''
+      technician: appointment.technician?.name || ''
     });
     setShowReschedule(true);
   };
@@ -142,7 +142,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
             customerInfo={{
               name: 'Customer',
               email: selectedAppointment.customer_email || '',
-              phone: selectedAppointment.customer_phone || ''
+              phone: ''
             }}
             onPaymentComplete={handlePaymentComplete}
             onSkipPayment={handleSkipPayment}
@@ -217,10 +217,10 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                     </div>
                   )}
 
-                  {appointment.customer_phone && (
+                  {appointment.customer_email && (
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm text-gray-600">{appointment.customer_phone}</span>
+                      <span className="text-sm text-gray-600">{appointment.customer_email}</span>
                     </div>
                   )}
 
@@ -290,7 +290,7 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                             </SelectTrigger>
                             <SelectContent>
                               {technicians.map((tech) => (
-                                <SelectItem key={tech.id} value={tech.id}>
+                                <SelectItem key={tech.id} value={tech.name}>
                                   {tech.name}
                                 </SelectItem>
                               ))}
