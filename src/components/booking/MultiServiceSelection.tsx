@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +30,13 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
 
   const totalPrice = selectedServiceDetails.reduce((sum, service) => sum + service.price, 0);
   const totalDuration = selectedServiceDetails.reduce((sum, service) => sum + service.duration, 0);
+
+  // Debug logging to help understand the issue
+  useEffect(() => {
+    console.log('MultiServiceSelection - selectedServices:', selectedServices);
+    console.log('MultiServiceSelection - services:', services.map(s => ({ id: s.id, name: s.name })));
+    console.log('MultiServiceSelection - selectedServiceDetails:', selectedServiceDetails);
+  }, [selectedServices, services, selectedServiceDetails]);
 
   return (
     <div className="space-y-6">
@@ -74,29 +81,36 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
       {/* Available Services */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {services.map((service) => {
-          const isSelected = selectedServices.includes(service.id.toString());
+          const serviceIdString = service.id.toString();
+          const isSelected = selectedServices.includes(serviceIdString);
           const isDisabled = !isSelected && selectedServices.length >= 5;
+          
+          console.log(`Service ${service.name} (ID: ${serviceIdString}):`, {
+            isSelected,
+            selectedServices,
+            includes: selectedServices.includes(serviceIdString)
+          });
           
           return (
             <div key={service.id} className="relative">
               <Card className={`h-full border-2 transition-all cursor-pointer ${
                 isSelected 
-                  ? 'border-pink-500 bg-pink-50' 
+                  ? 'border-pink-500 bg-pink-50 ring-2 ring-pink-200' 
                   : isDisabled 
-                  ? 'border-gray-200 bg-gray-50 opacity-60' 
-                  : 'border-gray-200 hover:border-pink-300'
+                  ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' 
+                  : 'border-gray-200 hover:border-pink-300 hover:shadow-md'
               }`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <Checkbox
                       id={`service-${service.id}`}
                       checked={isSelected}
-                      onCheckedChange={() => !isDisabled && onServiceToggle(service.id.toString())}
+                      onCheckedChange={() => !isDisabled && onServiceToggle(serviceIdString)}
                       disabled={isDisabled}
                       className="mt-1"
                     />
                     {isSelected && (
-                      <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                      <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                         Selected
                       </span>
                     )}
@@ -104,7 +118,7 @@ const MultiServiceSelection: React.FC<MultiServiceSelectionProps> = ({
                   
                   <div 
                     className={`cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
-                    onClick={() => !isDisabled && onServiceToggle(service.id.toString())}
+                    onClick={() => !isDisabled && onServiceToggle(serviceIdString)}
                   >
                     <div className="aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
                       <img

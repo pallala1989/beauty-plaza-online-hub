@@ -94,7 +94,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
       if (step === 3) return "Step 3: Choose Technician & Type";
       if (step === 4) return "Step 4: Pick Date & Time";
       if (step === 5 && serviceType === "in-home") return "Step 5: Verify Phone";
-      if (step === 5) return "Step 5: Process Payment";
+      if (step === 5 && serviceType === "in-store") return "Step 5: Process Payment";
       if (step === 6) return "Step 6: Process Payment";
     } else {
       if (step === 1) return "Step 1: Select Services";
@@ -112,7 +112,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
     if ((isAdminMode && step === 4) || (!isAdminMode && step === 3)) return <CalendarDays className="mr-2" />;
     if (step === 4 && serviceType === "in-home" && !isAdminMode) return <Phone className="mr-2" />;
     if (step === 5 && serviceType === "in-home" && isAdminMode) return <Phone className="mr-2" />;
-    if ((step === 5 && !isAdminMode) || (step === 6 && isAdminMode) || (step === 5 && serviceType === "in-store" && isAdminMode)) return <DollarSign className="mr-2" />;
+    if ((step === 5 && serviceType === "in-store" && isAdminMode) || (step === 6 && isAdminMode) || (step === 5 && !isAdminMode)) return <DollarSign className="mr-2" />;
     return <MapPin className="mr-2" />;
   };
 

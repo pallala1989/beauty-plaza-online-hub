@@ -36,8 +36,18 @@ export const useBookingState = () => {
       const service = location.state.preSelectedService;
       console.log('Pre-selecting service from location state:', service);
       const serviceId = service.id.toString();
+      
+      // Ensure the service is properly selected
       setSelectedServices([serviceId]);
       setSelectedService(serviceId);
+      
+      // Add a small delay to ensure state is properly set before components render
+      setTimeout(() => {
+        console.log('Service selection state updated:', {
+          selectedServices: [serviceId],
+          selectedService: serviceId
+        });
+      }, 100);
     }
   }, [location.state]);
 

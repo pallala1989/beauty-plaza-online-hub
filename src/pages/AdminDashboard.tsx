@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAppointments } from "@/hooks/useAppointments";
+import { useServices } from "@/hooks/useServices";
+import AppointmentsManagement from "@/components/admin/AppointmentsManagement";
 import { 
   Users, 
   Calendar, 
@@ -26,21 +29,39 @@ import {
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { appointments, isLoading: appointmentsLoading } = useAppointments();
+  const { services: servicesFromHook, isLoading: servicesLoading } = useServices();
   
-  // Mock data
-  const stats = {
-    totalCustomers: 1247,
-    totalAppointments: 3654,
-    monthlyRevenue: 23480,
-    growthRate: 12.5
-  };
+  // Calculate real stats from data
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    totalAppointments: 0,
+    monthlyRevenue: 0,
+    growthRate: 0
+  });
 
+  useEffect(() => {
+    if (appointments.length > 0) {
+      const totalRevenue = appointments.reduce((sum, apt) => sum + (apt.total_amount || 0), 0);
+      const uniqueCustomers = new Set(appointments.map(apt => apt.customer_email)).size;
+      
+      setStats({
+        totalCustomers: uniqueCustomers,
+        totalAppointments: appointments.length,
+        monthlyRevenue: totalRevenue,
+        growthRate: 12.5 // This would be calculated based on historical data
+      });
+    }
+  }, [appointments]);
+
+  // Generate revenue data from appointments
   const revenueData = [
     { month: 'Jan', revenue: 18500 },
     { month: 'Feb', revenue: 19200 },
     { month: 'Mar', revenue: 21000 },
     { month: 'Apr', revenue: 22300 },
-    { month: 'May', revenue: 23480 },
+    { month: 'May', revenue: stats.monthlyRevenue || 23480 },
   ];
 
   const appointmentData = [
@@ -103,17 +124,25 @@ const AdminDashboard = () => {
     noShowFee: "25"
   });
 
-  const customers = [
-    { id: 1, name: "Sarah Johnson", email: "sarah@email.com", phone: "(302) 555-0123", visits: 8, status: "Active", totalSpent: 650 },
-    { id: 2, name: "Emma Davis", email: "emma@email.com", phone: "(302) 555-0124", visits: 3, status: "Active", totalSpent: 285 },
-    { id: 3, name: "Lisa Chen", email: "lisa@email.com", phone: "(302) 555-0125", visits: 12, status: "VIP", totalSpent: 1250 },
-  ];
-
-  const appointments = [
-    { id: 1, customer: "Sarah Johnson", service: "Classic Facial", date: "2024-02-15", time: "2:00 PM", status: "Confirmed", technician: "Sarah Johnson" },
-    { id: 2, customer: "Emma Davis", service: "Hair Color", date: "2024-02-15", time: "3:00 PM", status: "Pending", technician: "Emma Davis" },
-    { id: 3, customer: "Lisa Chen", service: "Bridal Makeup", date: "2024-02-16", time: "10:00 AM", status: "Confirmed", technician: "Lisa Chen" },
-  ];
+  // Get unique customers from appointments
+  const customers = Array.from(
+    new Map(
+      appointments.map(apt => [
+        apt.customer_email,
+        {
+          id: apt.customer_email,
+          name: apt.customer_name || 'Customer',
+          email: apt.customer_email,
+          phone: apt.customer_phone || '',
+          visits: appointments.filter(a => a.customer_email === apt.customer_email).length,
+          status: 'Active',
+          totalSpent: appointments
+            .filter(a => a.customer_email === apt.customer_email)
+            .reduce((sum, a) => sum + (a.total_amount || 0), 0)
+        }
+      ])
+    ).values()
+  );
 
   const handleAddService = () => {
     if (!newService.name || !newService.price || !newService.duration) {
@@ -291,10 +320,14 @@ const AdminDashboard = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Confirmed":
+      case "confirmed":
+      case "scheduled":
         return "bg-green-100 text-green-800";
       case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "Cancelled":
+      case "cancelled":
         return "bg-red-100 text-red-800";
       case "Active":
         return "bg-blue-100 text-blue-800";
@@ -347,7 +380,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900">${stats.monthlyRevenue.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-gray-900">${stats.monthlyRevenue.toFixed(2)}</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-green-600" />
               </div>
@@ -405,14 +438,19 @@ const AdminDashboard = () => {
         </div>
 
         {/* Management Tabs */}
-        <Tabs defaultValue="services" className="space-y-6">
+        <Tabs defaultValue="appointments" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="technicians">Technicians</TabsTrigger>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
+
+          {/* Appointments Management - Now First Tab */}
+          <TabsContent value="appointments" className="space-y-6">
+            <AppointmentsManagement userRole={user?.role} userId={user?.id} />
+          </TabsContent>
 
           {/* Services Management */}
           <TabsContent value="services" className="space-y-6">
@@ -661,44 +699,6 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Appointments Management */}
-          <TabsContent value="appointments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appointments Management</CardTitle>
-                <CardDescription>View and manage upcoming appointments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{appointment.customer}</h3>
-                          <p className="text-sm text-gray-600">{appointment.service}</p>
-                          <p className="text-sm text-gray-600">{appointment.date} at {appointment.time}</p>
-                          <p className="text-sm text-gray-500">Technician: {appointment.technician}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge className={getStatusColor(appointment.status)}>
-                            {appointment.status}
-                          </Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleViewAppointmentDetails(appointment)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Customers Management */}
           <TabsContent value="customers" className="space-y-6">
             <Card>
@@ -715,7 +715,7 @@ const AdminDashboard = () => {
                           <h3 className="font-semibold">{customer.name}</h3>
                           <p className="text-sm text-gray-600">{customer.email}</p>
                           <p className="text-sm text-gray-600">{customer.phone}</p>
-                          <p className="text-sm text-gray-600">{customer.visits} visits • ${customer.totalSpent} total spent</p>
+                          <p className="text-sm text-gray-600">{customer.visits} visits • ${customer.totalSpent.toFixed(2)} total spent</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Badge className={getStatusColor(customer.status)}>
@@ -737,7 +737,7 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Enhanced Settings */}
+          {/* Settings */}
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
