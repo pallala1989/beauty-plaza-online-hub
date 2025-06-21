@@ -10,6 +10,8 @@ interface AppointmentWithDetails {
   total_amount: number;
   service_type: string;
   notes?: string;
+  customer_email?: string;
+  customer_phone?: string;
   service: {
     name: string;
     price: number;

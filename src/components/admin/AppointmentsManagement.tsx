@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -214,13 +213,6 @@ const AppointmentsManagement: React.FC<AppointmentsManagementProps> = ({ userRol
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 mr-2 text-gray-500" />
                       <span className="text-sm text-gray-600">In-Home Service</span>
-                    </div>
-                  )}
-
-                  {appointment.customer_email && (
-                    <div className="flex items-center">
-                      <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm text-gray-600">{appointment.customer_email}</span>
                     </div>
                   )}
 
