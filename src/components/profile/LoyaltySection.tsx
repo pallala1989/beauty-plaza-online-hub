@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +39,6 @@ const LoyaltySection = ({ onRedeemPoints }: LoyaltySectionProps) => {
     gold: 1000, 
     platinum: 2000 
   };
-
-  useEffect(() => {
-    setCurrentPoints(points);
-  }, [points]);
 
   const getNextRewardLevel = () => {
     const tiers = Object.entries(loyaltyTiers).sort(([,a], [,b]) => a - b);

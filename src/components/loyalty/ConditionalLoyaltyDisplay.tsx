@@ -18,8 +18,8 @@ const ConditionalLoyaltyDisplay: React.FC<ConditionalLoyaltyDisplayProps> = ({
     return <div>Loading...</div>;
   }
   
-  // Check if loyalty is enabled (default to true if not set)
-  const isLoyaltyEnabled = settings?.loyalty_enabled !== false;
+  // Check if loyalty is enabled via navigation settings (default to true if not set)
+  const isLoyaltyEnabled = settings?.navigation_settings?.show_loyalty !== false;
   
   if (!isLoyaltyEnabled) {
     return <>{fallback}</>;

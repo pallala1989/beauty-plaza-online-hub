@@ -17,7 +17,7 @@ const LoyaltyProgram = () => {
   const { settings } = useSettings();
   
   // Check if loyalty is enabled in admin settings
-  const isLoyaltyEnabled = settings?.loyalty_enabled !== false;
+  const isLoyaltyEnabled = settings?.navigation_settings?.show_loyalty !== false;
   
   // Get loyalty settings with defaults
   const loyaltyTiers = settings?.loyalty_tiers || { 

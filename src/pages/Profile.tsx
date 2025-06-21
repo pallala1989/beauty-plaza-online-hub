@@ -65,7 +65,7 @@ const Profile = () => {
 
           {/* Loyalty Tab */}
           <TabsContent value="loyalty" className="space-y-6">
-            <LoyaltySection points={850} onRedeemPoints={handleRedeemPoints} />
+            <LoyaltySection onRedeemPoints={handleRedeemPoints} />
           </TabsContent>
 
           {/* Referrals Tab */}
