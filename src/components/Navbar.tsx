@@ -56,7 +56,7 @@ const Navbar = () => {
         { name: "My Schedule", href: "/technician/schedule", icon: Calendar },
         { name: "My Appointments", href: "/technician/appointments", icon: Calendar }
       ];
-    } else if (profile?.role === 'user') {
+    } else if (profile?.role === 'customer') {
       return [
         { name: "My Bookings", href: "/my-bookings", icon: Calendar }
       ];
