@@ -6,6 +6,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Phone, User, LogOut, Settings, Calendar, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
+import { LucideIcon } from "lucide-react";
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon?: LucideIcon;
+}
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,14 +28,14 @@ const Navbar = () => {
     show_refer_friend: true
   };
 
-  const baseNavigation = [
+  const baseNavigation: NavigationItem[] = [
     { name: "Home", href: "/" },
     { name: "Services", href: "/services" },
     { name: "Book Online", href: "/book-online" },
     { name: "Contact", href: "/contact" },
   ];
 
-  const conditionalNavigation = [
+  const conditionalNavigation: NavigationItem[] = [
     ...(navSettings.show_gift_cards ? [{ name: "Gift Cards", href: "/gift-card" }] : []),
     ...(navSettings.show_loyalty ? [{ name: "Loyalty", href: "/loyalty" }] : []),
     ...(navSettings.show_refer_friend ? [{ name: "Refer Friend", href: "/refer-friend" }] : []),
@@ -36,7 +43,7 @@ const Navbar = () => {
   ];
 
   // Role-specific navigation
-  const getRoleSpecificNavigation = () => {
+  const getRoleSpecificNavigation = (): NavigationItem[] => {
     if (profile?.role === 'admin') {
       return [
         { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
@@ -44,14 +51,12 @@ const Navbar = () => {
         { name: "Appointments", href: "/admin/appointments", icon: Calendar },
         { name: "Manage Staff", href: "/admin/staff", icon: Users }
       ];
-    }
-    if (profile?.role === 'technician') {
+    } else if (profile?.role === 'technician') {
       return [
         { name: "My Schedule", href: "/technician/schedule", icon: Calendar },
         { name: "My Appointments", href: "/technician/appointments", icon: Calendar }
       ];
-    }
-    if (profile?.role === 'user') {
+    } else if (profile?.role === 'user') {
       return [
         { name: "My Bookings", href: "/my-bookings", icon: Calendar }
       ];
@@ -59,7 +64,7 @@ const Navbar = () => {
     return [];
   };
 
-  const navigation = user ? 
+  const navigation: NavigationItem[] = user ? 
     [...baseNavigation, ...conditionalNavigation, ...getRoleSpecificNavigation()] :
     [...baseNavigation, ...conditionalNavigation];
 
@@ -109,7 +114,7 @@ const Navbar = () => {
                   isActive(item.href) ? "text-pink-600" : "text-gray-700"
                 }`}
               >
-                {'icon' in item && item.icon && (
+                {item.icon && (
                   <item.icon className="w-4 h-4 mr-1" />
                 )}
                 {item.name}
@@ -179,7 +184,7 @@ const Navbar = () => {
                     }`}
                     onClick={() => setIsOpen(false)}
                   >
-                    {'icon' in item && item.icon && (
+                    {item.icon && (
                       <item.icon className="w-5 h-5 mr-2" />
                     )}
                     {item.name}
