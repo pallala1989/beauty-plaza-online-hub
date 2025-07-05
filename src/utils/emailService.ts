@@ -30,36 +30,33 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
     const selectedServiceDetails = emailData.services.find(s => s.id === emailData.selectedService);
     const selectedTechnicianDetails = emailData.technicians.find(t => t.id === emailData.selectedTechnician);
 
-    // Send email using EmailJS
+    // Prepare template variables for the new apt_conf template
+    const templateParams = {
+      customer_name: emailData.customerInfo.name,
+      customer_email: emailData.customerInfo.email,
+      service_name: selectedServiceDetails?.name || 'Beauty Service',
+      technician_name: selectedTechnicianDetails?.name || 'Our Team',
+      appointment_date: format(emailData.selectedDate, 'MMMM dd, yyyy'),
+      appointment_time: emailData.selectedTime,
+      service_type: emailData.serviceType === 'in-home' ? 'In-Home Service' : 'In-Store Service',
+      customer_phone: emailData.customerInfo.phone,
+      customer_address: emailData.serviceType === 'in-home' ? emailData.customerInfo.address : 'N/A',
+      special_notes: emailData.customerInfo.notes || 'None',
+      loyalty_points_used: emailData.loyaltyPointsUsed || 0,
+      loyalty_discount: emailData.loyaltyDiscount ? `$${emailData.loyaltyDiscount.toFixed(2)}` : '$0.00',
+      total_amount: `$${emailData.totalAmount.toFixed(2)}`,
+      booking_confirmation: `APT-${Date.now()}`,
+      company_name: 'Beauty Plaza'
+    };
+
+    // Send email using the new apt_conf template
     await emailjs.send(
       'service_e4fqv58',
-      'template_bvdipdh',
-      {
-        from_name: emailData.customerInfo.name,
-        from_email: emailData.customerInfo.email,
-        to_name: 'Beauty Plaza',
-        subject: 'New Appointment Booking',
-        message: `
-New appointment booking details:
-
-Service: ${selectedServiceDetails?.name}
-Technician: ${selectedTechnicianDetails?.name}
-Date: ${format(emailData.selectedDate, 'MMMM dd, yyyy')}
-Time: ${emailData.selectedTime}
-Service Type: ${emailData.serviceType === 'in-home' ? 'In-Home' : 'In-Store'}
-Customer: ${emailData.customerInfo.name}
-Email: ${emailData.customerInfo.email}
-Phone: ${emailData.customerInfo.phone}
-${emailData.serviceType === 'in-home' ? `Address: ${emailData.customerInfo.address}` : ''}
-${emailData.customerInfo.notes ? `Notes: ${emailData.customerInfo.notes}` : ''}
-${emailData.loyaltyPointsUsed ? `Loyalty Points Used: ${emailData.loyaltyPointsUsed}` : ''}
-${emailData.loyaltyDiscount ? `Loyalty Discount: $${emailData.loyaltyDiscount.toFixed(2)}` : ''}
-Total Amount: $${emailData.totalAmount}
-        `
-      }
+      'apt_conf', // Updated template ID
+      templateParams
     );
 
-    console.log('Confirmation email sent successfully');
+    console.log('Appointment confirmation email sent successfully');
   } catch (error) {
     console.error('Error sending confirmation email:', error);
   }
