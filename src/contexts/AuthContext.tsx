@@ -8,7 +8,7 @@ interface User {
   name?: string;
   full_name?: string;
   phone?: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'admin' | 'technician';
 }
 
 interface Profile {
@@ -17,7 +17,7 @@ interface Profile {
   name?: string;
   full_name?: string;
   phone?: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'admin' | 'technician';
 }
 
 interface AuthContextType {

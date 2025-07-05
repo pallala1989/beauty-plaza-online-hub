@@ -44,23 +44,30 @@ const Navbar = () => {
 
   // Role-specific navigation
   const getRoleSpecificNavigation = (): NavigationItem[] => {
-    if (profile?.role === 'admin') {
+    if (!profile?.role) return [];
+    
+    if (profile.role === 'admin') {
       return [
         { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
         { name: "Settings", href: "/admin-settings", icon: Settings },
         { name: "Appointments", href: "/admin/appointments", icon: Calendar },
         { name: "Manage Staff", href: "/admin/staff", icon: Users }
       ];
-    } else if (profile?.role === 'technician') {
+    }
+    
+    if (profile.role === 'technician') {
       return [
         { name: "My Schedule", href: "/technician/schedule", icon: Calendar },
         { name: "My Appointments", href: "/technician/appointments", icon: Calendar }
       ];
-    } else if (profile?.role === 'user') {
+    }
+    
+    if (profile.role === 'user') {
       return [
         { name: "My Bookings", href: "/my-bookings", icon: Calendar }
       ];
     }
+    
     return [];
   };
 
