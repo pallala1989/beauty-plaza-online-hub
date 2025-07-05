@@ -30,8 +30,9 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
     const selectedServiceDetails = emailData.services.find(s => s.id === emailData.selectedService);
     const selectedTechnicianDetails = emailData.technicians.find(t => t.id === emailData.selectedTechnician);
 
-    // Prepare template variables for the new apt_conf template
+    // Prepare template variables for the apt_conf template
     const templateParams = {
+      to_email: emailData.customerInfo.email, // Add recipient email
       customer_name: emailData.customerInfo.name,
       customer_email: emailData.customerInfo.email,
       service_name: selectedServiceDetails?.name || 'Beauty Service',
@@ -49,10 +50,10 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
       company_name: 'Beauty Plaza'
     };
 
-    // Send email using the new apt_conf template
+    // Send email using the apt_conf template
     await emailjs.send(
       'service_e4fqv58',
-      'apt_conf', // Updated template ID
+      'apt_conf',
       templateParams
     );
 
