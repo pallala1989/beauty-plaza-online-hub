@@ -30,22 +30,23 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
     const selectedServiceDetails = emailData.services.find(s => s.id === emailData.selectedService);
     const selectedTechnicianDetails = emailData.technicians.find(t => t.id === emailData.selectedTechnician);
 
-    // Prepare template variables for the apt_conf template
+    // Prepare template variables to match your EmailJS template
     const templateParams = {
-      to_email: emailData.customerInfo.email, // Add recipient email
-      customer_name: emailData.customerInfo.name,
-      customer_email: emailData.customerInfo.email,
-      service_name: selectedServiceDetails?.name || 'Beauty Service',
-      technician_name: selectedTechnicianDetails?.name || 'Our Team',
+      to_email: emailData.customerInfo.email,
+      customerInfo_name: emailData.customerInfo.name,
+      customerInfo_email: emailData.customerInfo.email,
+      customerInfo_phone: emailData.customerInfo.phone,
+      customerInfo_address: emailData.customerInfo.address,
+      customerInfo_notes: emailData.customerInfo.notes,
+      selectedServiceDetails_name: selectedServiceDetails?.name || 'Beauty Service',
+      selectedTechnicianDetails_name: selectedTechnicianDetails?.name || 'Our Team',
       appointment_date: format(emailData.selectedDate, 'MMMM dd, yyyy'),
       appointment_time: emailData.selectedTime,
-      service_type: emailData.serviceType === 'in-home' ? 'In-Home Service' : 'In-Store Service',
-      customer_phone: emailData.customerInfo.phone,
-      customer_address: emailData.serviceType === 'in-home' ? emailData.customerInfo.address : 'N/A',
-      special_notes: emailData.customerInfo.notes || 'None',
-      loyalty_points_used: emailData.loyaltyPointsUsed || 0,
-      loyalty_discount: emailData.loyaltyDiscount ? `$${emailData.loyaltyDiscount.toFixed(2)}` : '$0.00',
-      total_amount: `$${emailData.totalAmount.toFixed(2)}`,
+      serviceType: emailData.serviceType === 'in-home' ? 'In-Home Service' : 'In-Store Service',
+      serviceType_in_home: emailData.serviceType === 'in-home',
+      loyaltyPointsUsed: emailData.loyaltyPointsUsed || 0,
+      loyaltyDiscount: emailData.loyaltyDiscount ? emailData.loyaltyDiscount.toFixed(2) : null,
+      totalAmount: emailData.totalAmount.toFixed(2),
       booking_confirmation: `APT-${Date.now()}`,
       company_name: 'Beauty Plaza'
     };
