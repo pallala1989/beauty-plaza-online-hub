@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, User, MapPin, Phone, DollarSign, Users } from "lucide-react";
+import { LoadingSpinner, FormSkeleton } from "@/components/ui/loading-states";
 import MultiServiceSelection from "@/components/booking/MultiServiceSelection";
 import TechnicianAndTypeSelection from "@/components/booking/TechnicianAndTypeSelection";
 import DateTimeSelection from "@/components/booking/DateTimeSelection";
@@ -29,6 +29,7 @@ interface BookingFlowProps {
   otpSent: boolean;
   isAdminMode?: boolean;
   selectedCustomer?: any;
+  isLoading?: boolean;
   onServiceToggle: (serviceId: string) => void;
   onRemoveService: (serviceId: string) => void;
   onServiceSelect: (serviceId: string) => void;
@@ -68,6 +69,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
   otpSent,
   isAdminMode = false,
   selectedCustomer,
+  isLoading = false,
   onServiceToggle,
   onRemoveService,
   onServiceSelect,
@@ -100,7 +102,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
       if (step === 1) return "Step 1: Select Services";
       if (step === 2) return "Step 2: Choose Technician & Type";
       if (step === 3) return "Step 3: Pick Date & Time";
-      if (step === 4 && serviceType === "in-home") return "Step 4: Verify Phone";
+      if (step === 4 && serviceType === "in-home" && !isAdminMode) return "Step 4: Verify Phone";
       return `Step ${serviceType === "in-store" ? 4 : 5}: Your Information`;
     }
   };
@@ -115,6 +117,23 @@ const BookingFlow: React.FC<BookingFlowProps> = ({
     if ((step === 5 && serviceType === "in-store" && isAdminMode) || (step === 6 && isAdminMode) || (step === 5 && !isAdminMode)) return <DollarSign className="mr-2" />;
     return <MapPin className="mr-2" />;
   };
+
+  // Show loading state if data is being fetched
+  if (isLoading && (step === 1 || (step === 2 && isAdminMode))) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <LoadingSpinner size="sm" />
+            <span className="ml-2">Loading services and technicians...</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormSkeleton />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">

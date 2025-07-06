@@ -16,9 +16,10 @@ const timeSlots = [
 export const useBookingData = () => {
   const [monthlyBookedData, setMonthlyBookedData] = useState<Record<string, string[]>>({});
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'spring-boot' | 'supabase' | 'local'>('local');
 
   // Services query - prioritize Spring Boot backend
-  const { data: services = [] } = useQuery({
+  const { data: services = [], isLoading: servicesLoading, error: servicesError } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
       try {
@@ -34,24 +35,29 @@ export const useBookingData = () => {
         if (response.ok) {
           const data = await response.json();
           console.log('Services fetched from Spring Boot:', data);
+          setConnectionStatus('spring-boot');
           return data;
         }
         throw new Error('Spring Boot API not available');
       } catch (error) {
         console.log('Spring Boot unavailable, using local services data:', error);
+        setConnectionStatus('local');
         return servicesData;
       }
-    }
+    },
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
+    retry: 2,
   });
 
   // Beauty services query  
-  const { data: beautyservices = [] } = useQuery({
+  const { data: beautyservices = [], isLoading: beautyServicesLoading } = useQuery({
     queryKey: ['beautyservices'],
-    queryFn: () => beautyservicesData
+    queryFn: () => beautyservicesData,
+    staleTime: 30 * 60 * 1000,
   });
 
   // Technicians query - prioritize Spring Boot backend
-  const { data: technicians = [] } = useQuery({
+  const { data: technicians = [], isLoading: techniciansLoading, error: techniciansError } = useQuery({
     queryKey: ['technicians'],
     queryFn: async () => {
       try {
@@ -74,7 +80,9 @@ export const useBookingData = () => {
         console.log('Spring Boot unavailable, using local technicians data:', error);
         return techniciansData;
       }
-    }
+    },
+    staleTime: 30 * 60 * 1000,
+    retry: 2,
   });
 
   const fetchMonthlyBookedData = useCallback(async (month: Date, technicianId: string) => {
@@ -170,6 +178,9 @@ export const useBookingData = () => {
     technicians,
     monthlyBookedData,
     isFetchingSlots,
+    isLoading: servicesLoading || beautyServicesLoading || techniciansLoading,
+    hasError: servicesError || techniciansError,
+    connectionStatus,
     fetchMonthlyBookedData,
     refreshBookedSlots,
     clearBookedSlots
