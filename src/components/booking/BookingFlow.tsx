@@ -1,235 +1,242 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, User, MapPin, Phone, DollarSign, Users } from "lucide-react";
-import { LoadingSpinner, FormSkeleton } from "@/components/ui/loading-states";
-import MultiServiceSelection from "@/components/booking/MultiServiceSelection";
-import TechnicianAndTypeSelection from "@/components/booking/TechnicianAndTypeSelection";
-import DateTimeSelection from "@/components/booking/DateTimeSelection";
-import PhoneVerification from "@/components/booking/PhoneVerification";
-import CustomerInformation from "@/components/booking/CustomerInformation";
-import CustomerSelection from "@/components/booking/CustomerSelection";
-import PaymentStep from "@/components/booking/PaymentStep";
 
-interface BookingFlowProps {
-  step: number;
-  serviceType: string;
-  services: any[];
-  technicians: any[];
-  bookedSlots: string[];
-  isFetchingSlots: boolean;
-  fullyBookedDays: string[];
-  selectedServices: string[];
-  selectedService: string;
-  selectedTechnician: string;
-  selectedDate?: Date;
-  selectedTime: string;
-  customerInfo: any;
-  loyaltyPointsToUse?: number;
-  otp: string;
-  otpSent: boolean;
-  isAdminMode?: boolean;
-  selectedCustomer?: any;
-  isLoading?: boolean;
-  onServiceToggle: (serviceId: string) => void;
-  onRemoveService: (serviceId: string) => void;
-  onServiceSelect: (serviceId: string) => void;
-  onTechnicianSelect: (technicianId: string) => void;
-  onServiceTypeChange: (serviceType: string) => void;
-  onDateSelect: (date: Date | undefined) => void;
-  onTimeSelect: (time: string) => void;
-  onCustomerInfoChange: (info: any) => void;
-  onPhoneChange: (phone: string) => void;
-  onOtpChange: (otp: string) => void;
-  onSendOtp: () => void;
-  onVerifyOtp: () => void;
-  onMonthChange: (date: Date) => void;
-  onLoyaltyPointsChange?: (points: number) => void;
-  onCustomerSelect?: (customer: any) => void;
-  onCreateNewCustomer?: (customerData: any) => void;
-  onPaymentComplete?: () => void;
-  onSkipPayment?: () => void;
-}
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBookingFlow } from '@/hooks/booking/useBookingFlow';
+import { useBookingData } from '@/hooks/useBookingData';
+import { BookingProgressIndicator } from './BookingProgressIndicator';
+import { ServiceSelection } from './ServiceSelection';
+import { TechnicianAndTypeSelection } from './TechnicianAndTypeSelection';
+import { DateTimeSelection } from './DateTimeSelection';
+import { CustomerInformation } from './CustomerInformation';
+import { PaymentStep } from './PaymentStep';
+import { BookingConfirmation } from './BookingConfirmation';
+import { LoadingSpinner } from '@/components/ui/loading-states';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
-const BookingFlow: React.FC<BookingFlowProps> = ({
-  step,
-  serviceType,
-  services,
-  technicians,
-  bookedSlots,
-  isFetchingSlots,
-  fullyBookedDays,
-  selectedServices,
-  selectedService,
-  selectedTechnician,
-  selectedDate,
-  selectedTime,
-  customerInfo,
-  loyaltyPointsToUse,
-  otp,
-  otpSent,
-  isAdminMode = false,
-  selectedCustomer,
-  isLoading = false,
-  onServiceToggle,
-  onRemoveService,
-  onServiceSelect,
-  onTechnicianSelect,
-  onServiceTypeChange,
-  onDateSelect,
-  onTimeSelect,
-  onCustomerInfoChange,
-  onPhoneChange,
-  onOtpChange,
-  onSendOtp,
-  onVerifyOtp,
-  onMonthChange,
-  onLoyaltyPointsChange,
-  onCustomerSelect,
-  onCreateNewCustomer,
-  onPaymentComplete,
-  onSkipPayment
-}) => {
-  const getStepTitle = () => {
-    if (isAdminMode) {
-      if (step === 1) return "Step 1: Select Customer";
-      if (step === 2) return "Step 2: Select Services";
-      if (step === 3) return "Step 3: Choose Technician & Type";
-      if (step === 4) return "Step 4: Pick Date & Time";
-      if (step === 5 && serviceType === "in-home") return "Step 5: Verify Phone";
-      if (step === 5 && serviceType === "in-store") return "Step 5: Process Payment";
-      if (step === 6) return "Step 6: Process Payment";
-    } else {
-      if (step === 1) return "Step 1: Select Services";
-      if (step === 2) return "Step 2: Choose Technician & Type";
-      if (step === 3) return "Step 3: Pick Date & Time";
-      if (step === 4 && serviceType === "in-home" && !isAdminMode) return "Step 4: Verify Phone";
-      return `Step ${serviceType === "in-store" ? 4 : 5}: Your Information`;
+const BookingFlow = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const serviceId = searchParams.get('service');
+  
+  const {
+    currentStep,
+    bookingData,
+    goToStep,
+    nextStep,
+    previousStep,
+    updateBookingData,
+    submitBooking,
+    isSubmitting
+  } = useBookingFlow();
+
+  const {
+    services,
+    technicians,
+    timeSlots,
+    isLoading: dataLoading,
+    error: dataError,
+    fetchTimeSlots
+  } = useBookingData();
+
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (serviceId && services.length > 0) {
+      const service = services.find(s => s.id === serviceId);
+      if (service) {
+        updateBookingData({ selectedServices: [service] });
+      }
+    }
+  }, [serviceId, services, updateBookingData]);
+
+  const handleStepSubmit = async (stepData: any) => {
+    try {
+      setError(null);
+      
+      switch (currentStep) {
+        case 1:
+          updateBookingData({ selectedServices: stepData.selectedServices });
+          nextStep();
+          break;
+        case 2:
+          updateBookingData({ 
+            selectedTechnician: stepData.technician,
+            serviceType: stepData.serviceType 
+          });
+          // Fetch available time slots when technician and service type are selected
+          if (stepData.technician && stepData.serviceType && bookingData.selectedServices.length > 0) {
+            await fetchTimeSlots(
+              bookingData.selectedServices[0].id,
+              stepData.technician.id,
+              stepData.serviceType
+            );
+          }
+          nextStep();
+          break;
+        case 3:
+          updateBookingData({ 
+            selectedDate: stepData.date,
+            selectedTime: stepData.time 
+          });
+          nextStep();
+          break;
+        case 4:
+          updateBookingData({ customerInfo: stepData });
+          nextStep();
+          break;
+        case 5:
+          updateBookingData({ paymentInfo: stepData });
+          await handleBookingSubmission();
+          break;
+        default:
+          break;
+      }
+    } catch (error: any) {
+      console.error('Step submission error:', error);
+      setError(error.message || 'An error occurred while processing your booking');
     }
   };
 
-  const getStepIcon = () => {
-    if (isAdminMode && step === 1) return <Users className="mr-2" />;
-    if ((isAdminMode && step === 2) || (!isAdminMode && step === 1)) return <User className="mr-2" />;
-    if ((isAdminMode && step === 3) || (!isAdminMode && step === 2)) return <User className="mr-2" />;
-    if ((isAdminMode && step === 4) || (!isAdminMode && step === 3)) return <CalendarDays className="mr-2" />;
-    if (step === 4 && serviceType === "in-home" && !isAdminMode) return <Phone className="mr-2" />;
-    if (step === 5 && serviceType === "in-home" && isAdminMode) return <Phone className="mr-2" />;
-    if ((step === 5 && serviceType === "in-store" && isAdminMode) || (step === 6 && isAdminMode) || (step === 5 && !isAdminMode)) return <DollarSign className="mr-2" />;
-    return <MapPin className="mr-2" />;
+  const handleBookingSubmission = async () => {
+    try {
+      const result = await submitBooking();
+      if (result.success) {
+        nextStep(); // Go to confirmation step
+      } else {
+        setError(result.error || 'Failed to submit booking');
+      }
+    } catch (error: any) {
+      console.error('Booking submission error:', error);
+      setError(error.message || 'Failed to submit booking');
+    }
   };
 
-  // Show loading state if data is being fetched
-  if (isLoading && (step === 1 || (step === 2 && isAdminMode))) {
+  const steps = [
+    { number: 1, title: 'Select Services', description: 'Choose your services' },
+    { number: 2, title: 'Technician & Type', description: 'Select technician and service type' },
+    { number: 3, title: 'Date & Time', description: 'Pick your preferred time' },
+    { number: 4, title: 'Your Information', description: 'Provide contact details' },
+    { number: 5, title: 'Payment', description: 'Complete your booking' },
+    { number: 6, title: 'Confirmation', description: 'Booking confirmed' }
+  ];
+
+  if (dataLoading) {
     return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <LoadingSpinner size="sm" />
-            <span className="ml-2">Loading services and technicians...</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FormSkeleton />
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          {getStepIcon()}
-          {getStepTitle()}
-          {isAdminMode && <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Admin Mode</span>}
-        </CardTitle>
-      </CardHeader>
+  if (dataError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {dataError}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      <CardContent>
-        {/* Admin Mode: Step 1 - Select Customer */}
-        {isAdminMode && step === 1 && (
-          <CustomerSelection
-            selectedCustomer={selectedCustomer}
-            onCustomerSelect={onCustomerSelect!}
-            onCreateNewCustomer={onCreateNewCustomer!}
-          />
-        )}
+  const renderCurrentStep = () => {
+    const commonProps = {
+      onSubmit: handleStepSubmit,
+      onBack: currentStep > 1 ? previousStep : undefined,
+      isSubmitting
+    };
 
-        {/* Step 1 (Regular) / Step 2 (Admin): Select Services */}
-        {((step === 1 && !isAdminMode) || (step === 2 && isAdminMode)) && (
-          <MultiServiceSelection
+    switch (currentStep) {
+      case 1:
+        return (
+          <ServiceSelection
+            {...commonProps}
             services={services}
-            selectedServices={selectedServices}
-            onServiceToggle={onServiceToggle}
-            onRemoveService={onRemoveService}
+            selectedServices={bookingData.selectedServices}
           />
-        )}
-
-        {/* Step 2 (Regular) / Step 3 (Admin): Choose Technician & Service Type */}
-        {((step === 2 && !isAdminMode) || (step === 3 && isAdminMode)) && (
+        );
+      case 2:
+        return (
           <TechnicianAndTypeSelection
+            {...commonProps}
             technicians={technicians}
-            selectedTechnician={selectedTechnician}
-            serviceType={serviceType}
-            onTechnicianSelect={onTechnicianSelect}
-            onServiceTypeChange={onServiceTypeChange}
+            selectedTechnician={bookingData.selectedTechnician}
+            selectedServiceType={bookingData.serviceType}
           />
-        )}
-
-        {/* Step 3 (Regular) / Step 4 (Admin): Date & Time */}
-        {((step === 3 && !isAdminMode) || (step === 4 && isAdminMode)) && (
+        );
+      case 3:
+        return (
           <DateTimeSelection
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            bookedSlots={bookedSlots}
-            isFetchingSlots={isFetchingSlots}
-            fullyBookedDays={fullyBookedDays}
-            onDateSelect={onDateSelect}
-            onTimeSelect={onTimeSelect}
-            onMonthChange={onMonthChange}
+            {...commonProps}
+            timeSlots={timeSlots}
+            selectedDate={bookingData.selectedDate}
+            selectedTime={bookingData.selectedTime}
           />
-        )}
-
-        {/* Step 4 (Regular In-Home) / Step 5 (Admin In-Home): OTP Verification */}
-        {((step === 4 && serviceType === "in-home" && !isAdminMode) || (step === 5 && serviceType === "in-home" && isAdminMode)) && (
-          <PhoneVerification
-            phone={isAdminMode ? selectedCustomer?.phone || '' : customerInfo.phone}
-            otp={otp}
-            otpSent={otpSent}
-            onPhoneChange={onPhoneChange}
-            onOtpChange={onOtpChange}
-            onSendOtp={onSendOtp}
-            onVerifyOtp={onVerifyOtp}
-          />
-        )}
-
-        {/* Step 4 (Regular In-Store) / Step 5 (Regular In-Home): Customer Information */}
-        {((step === 4 && serviceType === "in-store" && !isAdminMode) || (step === 5 && !isAdminMode)) && (
+        );
+      case 4:
+        return (
           <CustomerInformation
-            customerInfo={customerInfo}
-            serviceType={serviceType}
-            selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
-            selectedService={services.find(s => s.id === selectedService)}
-            selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            loyaltyPointsToUse={loyaltyPointsToUse}
-            onCustomerInfoChange={onCustomerInfoChange}
-            onLoyaltyPointsChange={onLoyaltyPointsChange}
+            {...commonProps}
+            initialData={bookingData.customerInfo}
+            user={user}
           />
-        )}
-
-        {/* Payment Step for Admin Mode */}
-        {isAdminMode && ((step === 5 && serviceType === "in-store") || (step === 6 && serviceType === "in-home")) && (
+        );
+      case 5:
+        return (
           <PaymentStep
-            selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
-            customerInfo={selectedCustomer || customerInfo}
-            onPaymentComplete={onPaymentComplete!}
-            onSkipPayment={onSkipPayment!}
+            {...commonProps}
+            bookingData={bookingData}
           />
-        )}
-      </CardContent>
-    </Card>
+        );
+      case 6:
+        return (
+          <BookingConfirmation
+            bookingData={bookingData}
+            onNewBooking={() => {
+              navigate('/book-online');
+              window.location.reload();
+            }}
+            onViewBookings={() => navigate('/my-bookings')}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <BookingProgressIndicator
+            steps={steps}
+            currentStep={currentStep}
+            onStepClick={goToStep}
+          />
+
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="mt-8">
+            {renderCurrentStep()}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

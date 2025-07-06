@@ -1,188 +1,198 @@
 
-import { useQuery } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
-import { format } from 'date-fns';
-import { buildApiUrl } from "@/config/environment";
-import servicesData from "@/data/services.json";
-import techniciansData from "@/data/technicians.json";
-import beautyservicesData from "@/data/beautyservices.json";
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl } from '@/config/environment';
+import servicesData from '@/data/services.json';
+import techniciansData from '@/data/technicians.json';
 
-const timeSlots = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
-];
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  image_url: string;
+  is_active: boolean;
+}
+
+interface Technician {
+  id: string;
+  name: string;
+  specialties: string[];
+  is_available: boolean;
+}
+
+interface TimeSlot {
+  time: string;
+  available: boolean;
+  booked?: boolean;
+}
 
 export const useBookingData = () => {
-  const [monthlyBookedData, setMonthlyBookedData] = useState<Record<string, string[]>>({});
-  const [isFetchingSlots, setIsFetchingSlots] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'spring-boot' | 'supabase' | 'local'>('local');
+  const { user } = useAuth();
+  const [services, setServices] = useState<Service[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Services query - prioritize Spring Boot backend
-  const { data: services = [], isLoading: servicesLoading, error: servicesError } = useQuery({
-    queryKey: ['services'],
-    queryFn: async () => {
+  // Fetch services
+  useEffect(() => {
+    const fetchServices = async () => {
       try {
-        console.log('Fetching services from Spring Boot backend...');
-        const response = await fetch(buildApiUrl('/api/services'), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
+        setIsLoading(true);
+        setError(null);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Services fetched from Spring Boot:', data);
-          setConnectionStatus('spring-boot');
-          return data;
+        console.log('Fetching services from Spring Boot backend...');
+        
+        // Try Spring Boot backend first
+        try {
+          const response = await fetch(buildApiUrl('/api/services'), {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Services fetched from Spring Boot backend:', data);
+            setServices(data);
+            return;
+          } else {
+            console.log('Spring Boot response not ok:', response.status, response.statusText);
+          }
+        } catch (backendError) {
+          console.log('Spring Boot unavailable:', backendError);
         }
-        throw new Error('Spring Boot API not available');
-      } catch (error) {
-        console.log('Spring Boot unavailable, using local services data:', error);
-        setConnectionStatus('local');
-        return servicesData;
+        
+        // Fallback to local data
+        console.log('Using local services data as fallback');
+        setServices(servicesData);
+        
+      } catch (error: any) {
+        console.error('Error fetching services:', error);
+        setError('Failed to load services');
+        setServices(servicesData); // Fallback to local data
+      } finally {
+        setIsLoading(false);
       }
-    },
-    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
-    retry: 2,
-  });
+    };
 
-  // Beauty services query  
-  const { data: beautyservices = [], isLoading: beautyServicesLoading } = useQuery({
-    queryKey: ['beautyservices'],
-    queryFn: () => beautyservicesData,
-    staleTime: 30 * 60 * 1000,
-  });
+    fetchServices();
+  }, []);
 
-  // Technicians query - prioritize Spring Boot backend
-  const { data: technicians = [], isLoading: techniciansLoading, error: techniciansError } = useQuery({
-    queryKey: ['technicians'],
-    queryFn: async () => {
+  // Fetch technicians
+  useEffect(() => {
+    const fetchTechnicians = async () => {
       try {
         console.log('Fetching technicians from Spring Boot backend...');
-        const response = await fetch(buildApiUrl('/api/technicians'), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Technicians fetched from Spring Boot:', data);
-          return data;
+        // Try Spring Boot backend first
+        try {
+          const response = await fetch(buildApiUrl('/api/technicians'), {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Technicians fetched from Spring Boot backend:', data);
+            setTechnicians(data);
+            return;
+          } else {
+            console.log('Spring Boot technicians response not ok:', response.status);
+          }
+        } catch (backendError) {
+          console.log('Spring Boot technicians unavailable:', backendError);
         }
-        throw new Error('Spring Boot API not available');
-      } catch (error) {
-        console.log('Spring Boot unavailable, using local technicians data:', error);
-        return techniciansData;
-      }
-    },
-    staleTime: 30 * 60 * 1000,
-    retry: 2,
-  });
-
-  const fetchMonthlyBookedData = useCallback(async (month: Date, technicianId: string) => {
-    setIsFetchingSlots(true);
-    console.log('Fetching monthly booked data for:', format(month, 'yyyy-MM'), 'technician:', technicianId);
-
-    try {
-      // Try to fetch from Spring Boot backend first
-      try {
-        const startDate = format(new Date(month.getFullYear(), month.getMonth(), 1), 'yyyy-MM-dd');
-        const endDate = format(new Date(month.getFullYear(), month.getMonth() + 1, 0), 'yyyy-MM-dd');
         
-        const response = await fetch(buildApiUrl(`/api/appointments/slots?technicianId=${technicianId}&startDate=${startDate}&endDate=${endDate}`), {
+        // Fallback to local data
+        console.log('Using local technicians data as fallback');
+        setTechnicians(techniciansData);
+        
+      } catch (error: any) {
+        console.error('Error fetching technicians:', error);
+        setTechnicians(techniciansData); // Fallback to local data
+      }
+    };
+
+    fetchTechnicians();
+  }, []);
+
+  // Fetch time slots
+  const fetchTimeSlots = useCallback(async (serviceId: string, technicianId: string, serviceType: string, date?: string) => {
+    try {
+      console.log('Fetching time slots from Spring Boot backend...', { serviceId, technicianId, serviceType, date });
+      
+      const queryParams = new URLSearchParams({
+        serviceId,
+        technicianId,
+        serviceType,
+        ...(date && { date })
+      });
+      
+      let bookedSlots: TimeSlot[] = [];
+      
+      // Try Spring Boot backend first
+      try {
+        const response = await fetch(buildApiUrl(`/api/appointments/available-slots?${queryParams}`), {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(user && { 'Authorization': `Bearer ${user.id}` })
           }
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Monthly booked data from Spring Boot:', data);
-          setMonthlyBookedData(data);
+          console.log('Time slots fetched from Spring Boot backend:', data);
+          setTimeSlots(data);
           return;
+        } else {
+          console.log('Spring Boot slots response not ok:', response.status);
         }
       } catch (error) {
         console.log('Spring Boot slots fetch failed:', error);
       }
-
-      // Fallback to local storage and demo data
-      const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-      const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       
-      const monthData: Record<string, string[]> = {};
-
-      // Generate data for each day of the month
-      for (let date = firstDay; date <= lastDay; date.setDate(date.getDate() + 1)) {
-        const dateKey = format(date, 'yyyy-MM-dd');
-        
-        // Check localStorage for booked slots
-        const bookedSlotsKey = `booked_slots_${technicianId}_${dateKey}`;
-        const localBookedSlots = JSON.parse(localStorage.getItem(bookedSlotsKey) || '[]');
-        
-        // Simulate some random booked slots for demo (but respect localStorage)
-        const dayOfWeek = date.getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const isPast = date < new Date();
-        
-        let bookedSlots: string[] = [...localBookedSlots];
-        
-        // Add some demo booked slots if none exist in localStorage
-        if (localBookedSlots.length === 0 && !isPast) {
-          if (isWeekend) {
-            bookedSlots = timeSlots.slice(0, Math.floor(Math.random() * 3));
-          } else {
-            const numBooked = Math.floor(Math.random() * 5);
-            bookedSlots = timeSlots.slice(0, numBooked);
-          }
-        } else if (isPast) {
-          // Past dates should have more booked slots
-          bookedSlots = timeSlots.slice(0, Math.floor(timeSlots.length * 0.7));
-        }
-        
-        monthData[dateKey] = bookedSlots;
-      }
-
-      console.log('Monthly booked data (fallback):', monthData);
-      setMonthlyBookedData(monthData);
-
-    } catch (error) {
-      console.error('Error fetching monthly booked data:', error);
-      setMonthlyBookedData({});
-    } finally {
-      setIsFetchingSlots(false);
+      // Fallback to mock data
+      const allTimeSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+      ];
+      
+      // Generate some random booked slots for demo
+      const numBooked = Math.floor(Math.random() * 5);
+      const bookedTimes = allTimeSlots.slice(0, numBooked);
+      
+      const mockSlots: TimeSlot[] = allTimeSlots.map(time => ({
+        time,
+        available: !bookedTimes.includes(time),
+        booked: bookedTimes.includes(time)
+      }));
+      
+      console.log('Using mock time slots:', mockSlots);
+      setTimeSlots(mockSlots);
+      
+    } catch (error: any) {
+      console.error('Error fetching time slots:', error);
+      setError('Failed to load available time slots');
     }
-  }, []);
-
-  const refreshBookedSlots = useCallback(async (date?: Date, technicianId?: string) => {
-    if (date && technicianId) {
-      console.log('Refreshing booked slots for:', format(date, 'yyyy-MM-dd'), 'technician:', technicianId);
-      await fetchMonthlyBookedData(date, technicianId);
-    }
-  }, [fetchMonthlyBookedData]);
-
-  const clearBookedSlots = useCallback(() => {
-    setMonthlyBookedData({});
-  }, []);
+  }, [user]);
 
   return {
     services,
-    beautyservices,
     technicians,
-    monthlyBookedData,
-    isFetchingSlots,
-    isLoading: servicesLoading || beautyServicesLoading || techniciansLoading,
-    hasError: servicesError || techniciansError,
-    connectionStatus,
-    fetchMonthlyBookedData,
-    refreshBookedSlots,
-    clearBookedSlots
+    timeSlots,
+    isLoading,
+    error,
+    fetchTimeSlots
   };
 };

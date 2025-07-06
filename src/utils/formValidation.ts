@@ -1,16 +1,14 @@
 
-import { sanitizeInput, validateEmail, validatePhone, validateName } from './inputValidation';
-
-export interface ValidationRule {
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: RegExp;
-  custom?: (value: any) => string | null;
-}
-
 export interface FieldValidation {
-  [fieldName: string]: ValidationRule;
+  [fieldName: string]: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: RegExp;
+    email?: boolean;
+    phone?: boolean;
+    custom?: (value: any) => string | null;
+  };
 }
 
 export interface ValidationResult {
@@ -18,51 +16,70 @@ export interface ValidationResult {
   errors: { [fieldName: string]: string };
 }
 
-export const validateField = (value: any, rules: ValidationRule, fieldName: string): string | null => {
-  // Handle required validation
-  if (rules.required && (!value || (typeof value === 'string' && !value.trim()))) {
-    return `${fieldName} is required`;
-  }
-
-  // Skip other validations if field is empty and not required
-  if (!value || (typeof value === 'string' && !value.trim())) {
-    return null;
-  }
-
-  const stringValue = String(value).trim();
-
-  // Length validations
-  if (rules.minLength && stringValue.length < rules.minLength) {
-    return `${fieldName} must be at least ${rules.minLength} characters`;
-  }
-
-  if (rules.maxLength && stringValue.length > rules.maxLength) {
-    return `${fieldName} cannot exceed ${rules.maxLength} characters`;
-  }
-
-  // Pattern validation
-  if (rules.pattern && !rules.pattern.test(stringValue)) {
-    return `${fieldName} format is invalid`;
-  }
-
-  // Custom validation
-  if (rules.custom) {
-    return rules.custom(value);
-  }
-
-  return null;
-};
-
-export const validateForm = (data: any, validationSchema: FieldValidation): ValidationResult => {
+export const validateForm = (values: Record<string, any>, schema: FieldValidation): ValidationResult => {
   const errors: { [fieldName: string]: string } = {};
 
-  Object.keys(validationSchema).forEach(fieldName => {
-    const rules = validationSchema[fieldName];
-    const value = data[fieldName];
-    const error = validateField(value, rules, fieldName);
-    
-    if (error) {
-      errors[fieldName] = error;
+  Object.keys(schema).forEach(fieldName => {
+    const fieldSchema = schema[fieldName];
+    const value = values[fieldName];
+
+    // Required validation
+    if (fieldSchema.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+      errors[fieldName] = `${fieldName} is required`;
+      return;
+    }
+
+    // Skip other validations if field is empty and not required
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      return;
+    }
+
+    const stringValue = String(value);
+
+    // Min length validation
+    if (fieldSchema.minLength && stringValue.length < fieldSchema.minLength) {
+      errors[fieldName] = `${fieldName} must be at least ${fieldSchema.minLength} characters`;
+      return;
+    }
+
+    // Max length validation
+    if (fieldSchema.maxLength && stringValue.length > fieldSchema.maxLength) {
+      errors[fieldName] = `${fieldName} must be no more than ${fieldSchema.maxLength} characters`;
+      return;
+    }
+
+    // Email validation
+    if (fieldSchema.email) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(stringValue)) {
+        errors[fieldName] = 'Please enter a valid email address';
+        return;
+      }
+    }
+
+    // Phone validation
+    if (fieldSchema.phone) {
+      const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
+      const cleanPhone = stringValue.replace(/[\s\-\(\)]/g, '');
+      if (!phonePattern.test(cleanPhone)) {
+        errors[fieldName] = 'Please enter a valid phone number';
+        return;
+      }
+    }
+
+    // Pattern validation
+    if (fieldSchema.pattern && !fieldSchema.pattern.test(stringValue)) {
+      errors[fieldName] = `${fieldName} format is invalid`;
+      return;
+    }
+
+    // Custom validation
+    if (fieldSchema.custom) {
+      const customError = fieldSchema.custom(value);
+      if (customError) {
+        errors[fieldName] = customError;
+        return;
+      }
     }
   });
 
@@ -73,50 +90,23 @@ export const validateForm = (data: any, validationSchema: FieldValidation): Vali
 };
 
 // Common validation schemas
-export const customerInfoValidation: FieldValidation = {
-  name: {
-    required: true,
-    minLength: 2,
-    maxLength: 50,
-    custom: (value) => validateName(value) ? null : 'Name can only contain letters and spaces'
-  },
+export const commonSchemas = {
   email: {
     required: true,
-    custom: (value) => validateEmail(value) ? null : 'Please enter a valid email address'
+    email: true
   },
   phone: {
     required: true,
-    custom: (value) => validatePhone(value) ? null : 'Please enter a valid phone number'
+    phone: true
   },
-  address: {
-    required: false,
-    maxLength: 200
-  },
-  notes: {
-    required: false,
-    maxLength: 500
-  }
-};
-
-export const appointmentValidation: FieldValidation = {
-  selectedServices: {
+  name: {
     required: true,
-    custom: (value) => (Array.isArray(value) && value.length > 0) ? null : 'Please select at least one service'
+    minLength: 2,
+    maxLength: 50
   },
-  selectedTechnician: {
-    required: true
-  },
-  selectedDate: {
+  password: {
     required: true,
-    custom: (value) => {
-      if (!value) return 'Please select a date';
-      const selectedDate = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return selectedDate >= today ? null : 'Please select a future date';
-    }
-  },
-  selectedTime: {
-    required: true
+    minLength: 8,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
   }
 };

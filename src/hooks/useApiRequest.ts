@@ -20,7 +20,7 @@ interface ApiRequestOptions {
 }
 
 export const useApiRequest = <T = any>() => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -70,7 +70,7 @@ export const useApiRequest = <T = any>() => {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        logout();
+        signOut();
         navigate('/login');
         throw new Error('Authentication required');
       }
@@ -121,7 +121,7 @@ export const useApiRequest = <T = any>() => {
       
       throw error;
     }
-  }, [user, logout, navigate, toast]);
+  }, [user, signOut, navigate, toast]);
 
   const reset = useCallback(() => {
     setState({
