@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useCallback } from "react";
 import { format } from 'date-fns';
+import { buildApiUrl } from "@/config/environment";
 import servicesData from "@/data/services.json";
 import techniciansData from "@/data/technicians.json";
 import beautyservicesData from "@/data/beautyservices.json";
@@ -16,18 +17,28 @@ export const useBookingData = () => {
   const [monthlyBookedData, setMonthlyBookedData] = useState<Record<string, string[]>>({});
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
 
-  // Services query
+  // Services query - prioritize Spring Boot backend
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
       try {
-        // First try to fetch from API
-        const response = await fetch('http://localhost:8080/api/services');
-        if (!response.ok) throw new Error('API not available');
-        return await response.json();
+        console.log('Fetching services from Spring Boot backend...');
+        const response = await fetch(buildApiUrl('/api/services'), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Services fetched from Spring Boot:', data);
+          return data;
+        }
+        throw new Error('Spring Boot API not available');
       } catch (error) {
-        // Fallback to local data
-        console.log('Using local services data');
+        console.log('Spring Boot unavailable, using local services data:', error);
         return servicesData;
       }
     }
@@ -39,18 +50,28 @@ export const useBookingData = () => {
     queryFn: () => beautyservicesData
   });
 
-  // Technicians query
+  // Technicians query - prioritize Spring Boot backend
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians'],
     queryFn: async () => {
       try {
-        // First try to fetch from API
-        const response = await fetch('http://localhost:8080/api/technicians');
-        if (!response.ok) throw new Error('API not available');
-        return await response.json();
+        console.log('Fetching technicians from Spring Boot backend...');
+        const response = await fetch(buildApiUrl('/api/technicians'), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Technicians fetched from Spring Boot:', data);
+          return data;
+        }
+        throw new Error('Spring Boot API not available');
       } catch (error) {
-        // Fallback to local data
-        console.log('Using local technicians data');
+        console.log('Spring Boot unavailable, using local technicians data:', error);
         return techniciansData;
       }
     }
@@ -61,7 +82,30 @@ export const useBookingData = () => {
     console.log('Fetching monthly booked data for:', format(month, 'yyyy-MM'), 'technician:', technicianId);
 
     try {
-      // Get the first and last day of the month
+      // Try to fetch from Spring Boot backend first
+      try {
+        const startDate = format(new Date(month.getFullYear(), month.getMonth(), 1), 'yyyy-MM-dd');
+        const endDate = format(new Date(month.getFullYear(), month.getMonth() + 1, 0), 'yyyy-MM-dd');
+        
+        const response = await fetch(buildApiUrl(`/api/appointments/slots?technicianId=${technicianId}&startDate=${startDate}&endDate=${endDate}`), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Monthly booked data from Spring Boot:', data);
+          setMonthlyBookedData(data);
+          return;
+        }
+      } catch (error) {
+        console.log('Spring Boot slots fetch failed:', error);
+      }
+
+      // Fallback to local storage and demo data
       const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
       const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       
@@ -98,7 +142,7 @@ export const useBookingData = () => {
         monthData[dateKey] = bookedSlots;
       }
 
-      console.log('Monthly booked data:', monthData);
+      console.log('Monthly booked data (fallback):', monthData);
       setMonthlyBookedData(monthData);
 
     } catch (error) {

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { buildApiUrl } from '@/config/environment';
 import servicesData from '@/data/services.json';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,7 +14,6 @@ interface Service {
   is_active: boolean;
 }
 
-const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
 const SERVICES_CACHE_KEY = 'services_cache';
 const CACHE_EXPIRY_KEY = 'services_cache_expiry';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
@@ -52,7 +52,7 @@ export const useServices = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/health`, {
+      const response = await fetch(buildApiUrl('/api/health'), {
         method: 'GET',
         signal: controller.signal,
         headers: {
@@ -90,7 +90,8 @@ export const useServices = () => {
       
       if (isBackendHealthy) {
         try {
-          const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/services`, {
+          const response = await fetch(buildApiUrl('/api/services'), {
+            method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json'

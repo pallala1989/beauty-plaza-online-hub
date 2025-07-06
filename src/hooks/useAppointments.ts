@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl } from '@/config/environment';
 
 interface AppointmentWithDetails {
   id: string;
@@ -12,6 +13,7 @@ interface AppointmentWithDetails {
   notes?: string;
   customer_email?: string;
   customer_phone?: string;
+  customer_address?: string;
   service: {
     name: string;
     price: number;
@@ -19,9 +21,11 @@ interface AppointmentWithDetails {
   technician: {
     name: string;
   };
+  services?: Array<{
+    name: string;
+    price: number;
+  }>;
 }
-
-const SPRING_BOOT_BASE_URL = 'http://localhost:8080';
 
 export const useAppointments = () => {
   const { user } = useAuth();
@@ -43,11 +47,12 @@ export const useAppointments = () => {
       
       // Try Spring Boot backend first
       try {
-        const response = await fetch(`${SPRING_BOOT_BASE_URL}/api/appointments/user/${user.id}`, {
+        const response = await fetch(buildApiUrl(`/api/appointments/user/${user.id}`), {
+          method: 'GET',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.id}` // Basic auth header
+            'Authorization': `Bearer ${user.id}`
           }
         });
         
@@ -56,9 +61,11 @@ export const useAppointments = () => {
           console.log('Appointments fetched from Spring Boot:', data);
           setAppointments(data);
           return;
+        } else {
+          console.log('Spring Boot response not ok:', response.status, response.statusText);
         }
       } catch (backendError) {
-        console.log('Spring Boot unavailable, using fallback data:', backendError);
+        console.log('Spring Boot unavailable:', backendError);
       }
       
       // Fallback to mock data
@@ -81,6 +88,7 @@ export const useAppointments = () => {
         }
       ];
 
+      console.log('Using fallback appointment data');
       setAppointments(mockAppointments);
     } catch (error: any) {
       console.error('Error in fetchAppointments:', error);

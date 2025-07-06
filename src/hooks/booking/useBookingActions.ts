@@ -1,9 +1,11 @@
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { sendConfirmationEmail } from "@/utils/emailService";
 import { useLoyaltyPoints } from "@/hooks/useLoyaltyPoints";
+import { buildApiUrl } from "@/config/environment";
 
 export const useBookingActions = (
   step: number,
@@ -164,9 +166,11 @@ export const useBookingActions = (
         otpVerified: serviceType === 'in-home' ? true : false
       };
 
-      // Try to submit to Spring Boot backend
+      console.log('Submitting appointment to Spring Boot:', appointmentData);
+
+      // Submit to Spring Boot backend
       try {
-        const response = await fetch('http://localhost:8080/api/appointments', {
+        const response = await fetch(buildApiUrl('/api/appointments'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -176,14 +180,29 @@ export const useBookingActions = (
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create appointment');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Server error: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Appointment created:', data);
+        console.log('Appointment created successfully:', data);
+
+        toast({
+          title: "Appointment Booked!",
+          description: "Your appointment has been successfully created.",
+        });
+
       } catch (error) {
-        console.log('Spring Boot unavailable, storing locally');
+        console.error('Spring Boot booking failed:', error);
+        
+        // Fallback to localStorage
+        console.log('Storing appointment locally as fallback');
         localStorage.setItem(`appointment_${Date.now()}`, JSON.stringify(appointmentData));
+        
+        toast({
+          title: "Appointment Saved",
+          description: "Your appointment has been saved locally. It will sync when the server is available.",
+        });
       }
 
       // Store the booked slot in localStorage to mark it as unavailable

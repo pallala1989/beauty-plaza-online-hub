@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { buildApiUrl } from '@/config/environment';
 import { supabase } from "@/integrations/supabase/client";
 
 interface Settings {
@@ -62,19 +63,27 @@ export const useSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      console.log('Fetching settings from backend...');
+      console.log('Fetching settings from Spring Boot backend...');
       
       // Try Spring Boot backend first
-      const response = await fetch('http://localhost:8080/api/admin/settings');
+      const response = await fetch(buildApiUrl('/api/admin/settings'), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Settings fetched from backend:', data);
+        console.log('Settings fetched from Spring Boot backend:', data);
         setSettings(data);
         return;
+      } else {
+        console.log('Spring Boot settings response not ok:', response.status);
       }
     } catch (error) {
-      console.log('Backend unavailable, trying Supabase...');
+      console.log('Spring Boot unavailable for settings, trying Supabase...', error);
     }
 
     try {
@@ -98,7 +107,7 @@ export const useSettings = () => {
         setSettings({ ...defaultSettings, ...data });
       }
     } catch (error) {
-      console.log('Supabase unavailable, using default settings:', error);
+      console.log('Supabase unavailable for settings, using default settings:', error);
       // Final fallback to default settings
       setSettings(defaultSettings);
     } finally {
@@ -108,19 +117,25 @@ export const useSettings = () => {
 
   const updateSetting = async (key: string, value: any) => {
     try {
-      // Try backend first
-      const response = await fetch(`http://localhost:8080/api/admin/settings/${key}`, {
+      // Try Spring Boot backend first
+      const response = await fetch(buildApiUrl(`/api/admin/settings/${key}`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ value })
       });
 
       if (response.ok) {
+        console.log('Setting updated via Spring Boot backend');
         await fetchSettings();
         return;
+      } else {
+        console.log('Spring Boot update failed:', response.status);
       }
     } catch (error) {
-      console.log('Backend unavailable, trying Supabase...');
+      console.log('Spring Boot unavailable for update, trying Supabase...', error);
     }
 
     try {
