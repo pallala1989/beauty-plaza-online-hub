@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +115,16 @@ export const useBookingActions = (
       return;
     }
 
+    // Validate address for in-home services
+    if (serviceType === 'in-home' && !customerInfo.address?.trim()) {
+      toast({
+        title: "Address Required",
+        description: "Please provide your address for in-home service.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -145,6 +154,7 @@ export const useBookingActions = (
         notes: customerInfo.notes,
         customerPhone: customerInfo.phone,
         customerEmail: customerInfo.email,
+        customerAddress: serviceType === 'in-home' ? customerInfo.address : '',
         totalAmount: totalAmount,
         servicesTotal: servicesTotal,
         totalDuration: totalDuration,
@@ -188,16 +198,20 @@ export const useBookingActions = (
         deductPoints(loyaltyPointsToUse);
       }
 
-      // Send confirmation email (using first service for compatibility)
+      // Send confirmation email with multiple services support
       await sendConfirmationEmail({
         services,
         technicians,
-        selectedService: selectedServices[0],
+        selectedService: selectedServices[0], // For backward compatibility
+        selectedServices: selectedServices, // Pass the full array
         selectedTechnician,
         selectedDate,
         selectedTime,
         serviceType,
-        customerInfo,
+        customerInfo: {
+          ...customerInfo,
+          address: serviceType === 'in-home' ? customerInfo.address : ''
+        },
         totalAmount,
         loyaltyPointsUsed: loyaltyPointsToUse,
         loyaltyDiscount

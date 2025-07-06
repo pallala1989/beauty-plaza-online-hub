@@ -6,6 +6,7 @@ interface EmailData {
   services: any[];
   technicians: any[];
   selectedService: string;
+  selectedServices?: string[];
   selectedTechnician: string;
   selectedDate: Date;
   selectedTime: string;
@@ -27,8 +28,20 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
     // Initialize EmailJS
     emailjs.init('UmpeYlneD0XdC7d7D');
 
-    const selectedServiceDetails = emailData.services.find(s => s.id === emailData.selectedService);
+    // Handle multiple services or single service
+    const serviceIds = emailData.selectedServices && emailData.selectedServices.length > 0 
+      ? emailData.selectedServices 
+      : [emailData.selectedService];
+    
+    const selectedServiceDetails = emailData.services.filter(s => 
+      serviceIds.includes(s.id.toString())
+    );
+    
     const selectedTechnicianDetails = emailData.technicians.find(t => t.id === emailData.selectedTechnician);
+
+    // Create service names list for email
+    const serviceNames = selectedServiceDetails.map(s => s.name).join(', ');
+    const servicePrices = selectedServiceDetails.map(s => `${s.name}: $${s.price}`).join(' | ');
 
     // Prepare template variables to match your EmailJS template
     const templateParams = {
@@ -36,9 +49,10 @@ export const sendConfirmationEmail = async (emailData: EmailData) => {
       customerInfo_name: emailData.customerInfo.name,
       customerInfo_email: emailData.customerInfo.email,
       customerInfo_phone: emailData.customerInfo.phone,
-      customerInfo_address: emailData.customerInfo.address,
+      customerInfo_address: emailData.serviceType === 'in-home' ? emailData.customerInfo.address : '',
       customerInfo_notes: emailData.customerInfo.notes,
-      selectedServiceDetails_name: selectedServiceDetails?.name || 'Beauty Service',
+      selectedServiceDetails_name: serviceNames,
+      service_details: servicePrices,
       selectedTechnicianDetails_name: selectedTechnicianDetails?.name || 'Our Team',
       appointment_date: format(emailData.selectedDate, 'MMMM dd, yyyy'),
       appointment_time: emailData.selectedTime,

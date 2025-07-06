@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Clock, User, MapPin } from "lucide-react";
+import { CalendarDays, Clock, User, MapPin, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import LoyaltyPointsUsage from "@/components/booking/LoyaltyPointsUsage";
 
@@ -197,15 +197,24 @@ const CustomerInformation: React.FC<CustomerInformationProps> = ({
             </div>
 
             {serviceType === "in-home" && (
-              <div>
-                <Label htmlFor="address">Service Address *</Label>
+              <div className="md:col-span-2">
+                <Label htmlFor="address" className="flex items-center">
+                  Service Address *
+                  <AlertCircle className="w-4 h-4 ml-1 text-orange-500" />
+                </Label>
                 <Input
                   id="address"
                   value={customerInfo.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Enter service address"
+                  placeholder="Enter your complete service address including street, city, state, zip"
                   required
+                  className={!customerInfo.address?.trim() ? 'border-red-300 focus:border-red-500' : ''}
                 />
+                {!customerInfo.address?.trim() && (
+                  <p className="text-sm text-red-600 mt-1">
+                    Address is required for in-home service
+                  </p>
+                )}
               </div>
             )}
           </div>
