@@ -125,7 +125,7 @@ const BookOnline = () => {
           <TechnicianAndTypeSelection
             technicians={technicians}
             selectedTechnician={selectedTechnician}
-            selectedServiceType={serviceType}
+            serviceType={serviceType}
             onTechnicianSelect={handleTechnicianSelect}
             onServiceTypeChange={handleServiceTypeChange}
           />
@@ -160,13 +160,14 @@ const BookOnline = () => {
           return (
             <CustomerInformation
               customerInfo={customerInfo}
+              serviceType={serviceType}
+              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
               loyaltyPointsToUse={loyaltyPointsToUse}
               onCustomerInfoChange={setCustomerInfo}
               onLoyaltyPointsChange={setLoyaltyPointsToUse}
-              isAdminMode={isAdminMode}
-              selectedCustomer={selectedCustomer}
-              onCustomerSelect={handleCustomerSelect}
-              onCreateNewCustomer={handleCreateNewCustomer}
             />
           );
         }
@@ -175,13 +176,14 @@ const BookOnline = () => {
           return (
             <CustomerInformation
               customerInfo={customerInfo}
+              serviceType={serviceType}
+              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
               loyaltyPointsToUse={loyaltyPointsToUse}
               onCustomerInfoChange={setCustomerInfo}
               onLoyaltyPointsChange={setLoyaltyPointsToUse}
-              isAdminMode={isAdminMode}
-              selectedCustomer={selectedCustomer}
-              onCustomerSelect={handleCustomerSelect}
-              onCreateNewCustomer={handleCreateNewCustomer}
             />
           );
         } else if (isAdminMode) {

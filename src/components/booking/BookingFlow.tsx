@@ -193,24 +193,38 @@ const BookingFlow = () => {
             {...commonProps}
             technicians={technicians}
             selectedTechnician={selectedTechnician}
-            selectedServiceType={serviceType}
+            serviceType={serviceType}
+            onTechnicianSelect={setSelectedTechnician}
+            onServiceTypeChange={setServiceType}
           />
         );
       case 3:
         return (
           <DateTimeSelection
             {...commonProps}
-            timeSlots={timeSlots}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
+            bookedSlots={bookedSlots}
+            isFetchingSlots={isFetchingSlots}
+            fullyBookedDays={fullyBookedDays}
+            onDateSelect={handleDateSelect}
+            onTimeSelect={setSelectedTime}
+            onMonthChange={handleMonthChange}
           />
         );
       case 4:
         return (
           <CustomerInformation
             {...commonProps}
-            initialData={customerInfo}
-            user={user}
+            customerInfo={customerInfo}
+            serviceType={serviceType}
+            selectedServices={services.filter(s => selectedServices.includes(s.id))}
+            selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            loyaltyPointsToUse={loyaltyPointsToUse}
+            onCustomerInfoChange={setCustomerInfo}
+            onLoyaltyPointsChange={setLoyaltyPointsToUse}
           />
         );
       case 5:
