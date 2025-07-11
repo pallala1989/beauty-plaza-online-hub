@@ -110,6 +110,14 @@ export const useBookingFlow = () => {
     }
   };
 
+  // Fixed service selection logic
+  const handleServiceSelect = (serviceId: string) => {
+    console.log('handleServiceSelect called with:', serviceId);
+    setSelectedService(serviceId);
+    // Update selectedServices array to include the selected service
+    setSelectedServices([serviceId]);
+  };
+
   const handleServiceToggle = (serviceId: string) => {
     setSelectedServices(prev => {
       if (prev.includes(serviceId)) {
@@ -218,7 +226,7 @@ export const useBookingFlow = () => {
     isFetchingSlots,
     fullyBookedDays,
     setSelectedServices,
-    setSelectedService,
+    setSelectedService: handleServiceSelect, // Use the fixed handler
     setSelectedTechnician,
     handleDateSelect,
     setSelectedTime,

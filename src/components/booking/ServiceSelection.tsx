@@ -20,10 +20,15 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({
     target.src = "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
   };
 
+  const handleServiceSelect = (serviceId: string) => {
+    console.log('Service selected:', serviceId);
+    onServiceSelect(serviceId);
+  };
+
   return (
     <div className="space-y-4">
       <Label>Choose your service:</Label>
-      <RadioGroup value={selectedService} onValueChange={onServiceSelect}>
+      <RadioGroup value={selectedService} onValueChange={handleServiceSelect}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
             <div key={service.id} className="relative">
