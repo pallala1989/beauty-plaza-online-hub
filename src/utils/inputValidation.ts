@@ -16,6 +16,9 @@ export const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
+// Export alias for backwards compatibility
+export const validateEmail = isValidEmail;
+
 // Phone validation (supports international formats)
 export const isValidPhone = (phone: string): boolean => {
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');

@@ -1,9 +1,14 @@
 
 import React from "react";
 import BookingProgressIndicator from "@/components/booking/BookingProgressIndicator";
-import BookingFlow from "@/components/booking/BookingFlow";
 import BookingNavigation from "@/components/booking/BookingNavigation";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
+import ServiceSelection from "@/components/booking/ServiceSelection";
+import TechnicianAndTypeSelection from "@/components/booking/TechnicianAndTypeSelection";
+import DateTimeSelection from "@/components/booking/DateTimeSelection";
+import CustomerInformation from "@/components/booking/CustomerInformation";
+import PhoneVerification from "@/components/booking/PhoneVerification";
+import PaymentStep from "@/components/booking/PaymentStep";
 import { useBookingFlow } from "@/hooks/booking/useBookingFlow";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
@@ -105,6 +110,108 @@ const BookOnline = () => {
     handleSubmit();
   };
 
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <ServiceSelection
+            services={services}
+            selectedService={selectedService}
+            onServiceSelect={setSelectedService}
+          />
+        );
+      case 2:
+        return (
+          <TechnicianAndTypeSelection
+            technicians={technicians}
+            selectedTechnician={selectedTechnician}
+            selectedServiceType={serviceType}
+            onTechnicianSelect={handleTechnicianSelect}
+            onServiceTypeChange={handleServiceTypeChange}
+          />
+        );
+      case 3:
+        return (
+          <DateTimeSelection
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            bookedSlots={bookedSlots}
+            isFetchingSlots={isFetchingSlots}
+            fullyBookedDays={fullyBookedDays}
+            onDateSelect={handleDateSelect}
+            onTimeSelect={setSelectedTime}
+            onMonthChange={handleMonthChange}
+          />
+        );
+      case 4:
+        if (serviceType === "in-home") {
+          return (
+            <PhoneVerification
+              phone={customerInfo.phone}
+              otp={otp}
+              otpSent={otpSent}
+              onPhoneChange={handlePhoneChange}
+              onOtpChange={setOtp}
+              onSendOtp={sendOtp}
+              onVerifyOtp={verifyOtp}
+            />
+          );
+        } else {
+          return (
+            <CustomerInformation
+              customerInfo={customerInfo}
+              loyaltyPointsToUse={loyaltyPointsToUse}
+              onCustomerInfoChange={setCustomerInfo}
+              onLoyaltyPointsChange={setLoyaltyPointsToUse}
+              isAdminMode={isAdminMode}
+              selectedCustomer={selectedCustomer}
+              onCustomerSelect={handleCustomerSelect}
+              onCreateNewCustomer={handleCreateNewCustomer}
+            />
+          );
+        }
+      case 5:
+        if (serviceType === "in-home") {
+          return (
+            <CustomerInformation
+              customerInfo={customerInfo}
+              loyaltyPointsToUse={loyaltyPointsToUse}
+              onCustomerInfoChange={setCustomerInfo}
+              onLoyaltyPointsChange={setLoyaltyPointsToUse}
+              isAdminMode={isAdminMode}
+              selectedCustomer={selectedCustomer}
+              onCustomerSelect={handleCustomerSelect}
+              onCreateNewCustomer={handleCreateNewCustomer}
+            />
+          );
+        } else if (isAdminMode) {
+          return (
+            <PaymentStep
+              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              customerInfo={customerInfo}
+              onPaymentComplete={handlePaymentComplete}
+              onSkipPayment={handleSkipPayment}
+            />
+          );
+        }
+        break;
+      case 6:
+        if (serviceType === "in-home" && isAdminMode) {
+          return (
+            <PaymentStep
+              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              customerInfo={customerInfo}
+              onPaymentComplete={handlePaymentComplete}
+              onSkipPayment={handleSkipPayment}
+            />
+          );
+        }
+        break;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,44 +242,9 @@ const BookOnline = () => {
 
         <BookingProgressIndicator currentStep={step} maxStep={maxStep} />
 
-        <BookingFlow
-          step={step}
-          serviceType={serviceType}
-          services={services}
-          technicians={technicians}
-          bookedSlots={bookedSlots}
-          isFetchingSlots={isFetchingSlots}
-          fullyBookedDays={fullyBookedDays}
-          selectedServices={selectedServices}
-          selectedService={selectedService}
-          selectedTechnician={selectedTechnician}
-          selectedDate={selectedDate}
-          selectedTime={selectedTime}
-          customerInfo={customerInfo}
-          loyaltyPointsToUse={loyaltyPointsToUse}
-          otp={otp}
-          otpSent={otpSent}
-          isAdminMode={isAdminMode}
-          selectedCustomer={selectedCustomer}
-          onServiceToggle={handleServiceToggle}
-          onRemoveService={handleRemoveService}
-          onServiceSelect={setSelectedService}
-          onTechnicianSelect={handleTechnicianSelect}
-          onServiceTypeChange={handleServiceTypeChange}
-          onDateSelect={handleDateSelect}
-          onTimeSelect={setSelectedTime}
-          onCustomerInfoChange={setCustomerInfo}
-          onPhoneChange={handlePhoneChange}
-          onOtpChange={setOtp}
-          onSendOtp={sendOtp}
-          onVerifyOtp={verifyOtp}
-          onMonthChange={handleMonthChange}
-          onLoyaltyPointsChange={setLoyaltyPointsToUse}
-          onCustomerSelect={handleCustomerSelect}
-          onCreateNewCustomer={handleCreateNewCustomer}
-          onPaymentComplete={handlePaymentComplete}
-          onSkipPayment={handleSkipPayment}
-        />
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          {renderStep()}
+        </div>
 
         <BookingNavigation
           step={step}

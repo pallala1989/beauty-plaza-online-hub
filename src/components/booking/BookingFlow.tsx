@@ -4,16 +4,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookingFlow } from '@/hooks/booking/useBookingFlow';
 import { useBookingData } from '@/hooks/useBookingData';
-import { BookingProgressIndicator } from './BookingProgressIndicator';
-import { ServiceSelection } from './ServiceSelection';
-import { TechnicianAndTypeSelection } from './TechnicianAndTypeSelection';
-import { DateTimeSelection } from './DateTimeSelection';
-import { CustomerInformation } from './CustomerInformation';
-import { PaymentStep } from './PaymentStep';
-import { BookingConfirmation } from './BookingConfirmation';
+import BookingProgressIndicator from './BookingProgressIndicator';
+import ServiceSelection from './ServiceSelection';
+import TechnicianAndTypeSelection from './TechnicianAndTypeSelection';
+import DateTimeSelection from './DateTimeSelection';
+import CustomerInformation from './CustomerInformation';
+import PaymentStep from './PaymentStep';
+import BookingConfirmation from './BookingConfirmation';
 import { LoadingSpinner } from '@/components/ui/loading-states';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from 'lucide-react';
 
 const BookingFlow = () => {
@@ -23,19 +23,49 @@ const BookingFlow = () => {
   const serviceId = searchParams.get('service');
   
   const {
-    currentStep,
-    bookingData,
-    goToStep,
-    nextStep,
-    previousStep,
-    updateBookingData,
-    submitBooking,
-    isSubmitting
+    step,
+    selectedServices,
+    selectedService,
+    selectedTechnician,
+    selectedDate,
+    selectedTime,
+    serviceType,
+    otp,
+    otpSent,
+    isLoading,
+    showConfirmation,
+    bookingDetails,
+    customerInfo,
+    loyaltyPointsToUse,
+    services,
+    technicians,
+    bookedSlots,
+    isFetchingSlots,
+    fullyBookedDays,
+    setSelectedServices,
+    setSelectedService,
+    setSelectedTechnician,
+    handleDateSelect,
+    setSelectedTime,
+    setServiceType,
+    setOtp,
+    setCustomerInfo,
+    setLoyaltyPointsToUse,
+    handleServiceToggle,
+    handleRemoveService,
+    handleNext,
+    handleBack,
+    sendOtp,
+    verifyOtp,
+    handleSubmit,
+    handleConfirmationClose,
+    isNextDisabled,
+    handleMonthChange
   } = useBookingFlow();
 
   const {
-    services,
-    technicians,
+    services: dataServices,
+    technicians: dataTechnicians,
     timeSlots,
     isLoading: dataLoading,
     error: dataError,
@@ -48,48 +78,44 @@ const BookingFlow = () => {
     if (serviceId && services.length > 0) {
       const service = services.find(s => s.id === serviceId);
       if (service) {
-        updateBookingData({ selectedServices: [service] });
+        setSelectedServices([service.id]);
+        setSelectedService(service.id);
       }
     }
-  }, [serviceId, services, updateBookingData]);
+  }, [serviceId, services, setSelectedServices, setSelectedService]);
 
   const handleStepSubmit = async (stepData: any) => {
     try {
       setError(null);
       
-      switch (currentStep) {
+      switch (step) {
         case 1:
-          updateBookingData({ selectedServices: stepData.selectedServices });
-          nextStep();
+          handleServiceToggle(stepData.selectedServices[0]);
+          handleNext();
           break;
         case 2:
-          updateBookingData({ 
-            selectedTechnician: stepData.technician,
-            serviceType: stepData.serviceType 
-          });
-          // Fetch available time slots when technician and service type are selected
-          if (stepData.technician && stepData.serviceType && bookingData.selectedServices.length > 0) {
+          setSelectedTechnician(stepData.technician);
+          setServiceType(stepData.serviceType);
+          if (stepData.technician && stepData.serviceType && selectedServices.length > 0) {
             await fetchTimeSlots(
-              bookingData.selectedServices[0].id,
-              stepData.technician.id,
+              selectedServices[0],
+              stepData.technician,
               stepData.serviceType
             );
           }
-          nextStep();
+          handleNext();
           break;
         case 3:
-          updateBookingData({ 
-            selectedDate: stepData.date,
-            selectedTime: stepData.time 
-          });
-          nextStep();
+          handleDateSelect(stepData.date);
+          setSelectedTime(stepData.time);
+          handleNext();
           break;
         case 4:
-          updateBookingData({ customerInfo: stepData });
-          nextStep();
+          setCustomerInfo(stepData);
+          handleNext();
           break;
         case 5:
-          updateBookingData({ paymentInfo: stepData });
+          setCustomerInfo({ ...customerInfo, ...stepData });
           await handleBookingSubmission();
           break;
         default:
@@ -103,12 +129,7 @@ const BookingFlow = () => {
 
   const handleBookingSubmission = async () => {
     try {
-      const result = await submitBooking();
-      if (result.success) {
-        nextStep(); // Go to confirmation step
-      } else {
-        setError(result.error || 'Failed to submit booking');
-      }
+      await handleSubmit();
     } catch (error: any) {
       console.error('Booking submission error:', error);
       setError(error.message || 'Failed to submit booking');
@@ -124,7 +145,7 @@ const BookingFlow = () => {
     { number: 6, title: 'Confirmation', description: 'Booking confirmed' }
   ];
 
-  if (dataLoading) {
+  if (dataLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -152,17 +173,18 @@ const BookingFlow = () => {
   const renderCurrentStep = () => {
     const commonProps = {
       onSubmit: handleStepSubmit,
-      onBack: currentStep > 1 ? previousStep : undefined,
-      isSubmitting
+      onBack: step > 1 ? handleBack : undefined,
+      isSubmitting: isLoading
     };
 
-    switch (currentStep) {
+    switch (step) {
       case 1:
         return (
           <ServiceSelection
             {...commonProps}
             services={services}
-            selectedServices={bookingData.selectedServices}
+            selectedService={selectedService}
+            onServiceSelect={setSelectedService}
           />
         );
       case 2:
@@ -170,8 +192,8 @@ const BookingFlow = () => {
           <TechnicianAndTypeSelection
             {...commonProps}
             technicians={technicians}
-            selectedTechnician={bookingData.selectedTechnician}
-            selectedServiceType={bookingData.serviceType}
+            selectedTechnician={selectedTechnician}
+            selectedServiceType={serviceType}
           />
         );
       case 3:
@@ -179,15 +201,15 @@ const BookingFlow = () => {
           <DateTimeSelection
             {...commonProps}
             timeSlots={timeSlots}
-            selectedDate={bookingData.selectedDate}
-            selectedTime={bookingData.selectedTime}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
           />
         );
       case 4:
         return (
           <CustomerInformation
             {...commonProps}
-            initialData={bookingData.customerInfo}
+            initialData={customerInfo}
             user={user}
           />
         );
@@ -195,18 +217,21 @@ const BookingFlow = () => {
         return (
           <PaymentStep
             {...commonProps}
-            bookingData={bookingData}
+            selectedServices={services.filter(s => selectedServices.includes(s.id))}
+            customerInfo={customerInfo}
+            onPaymentComplete={() => handleNext()}
+            onSkipPayment={() => handleNext()}
           />
         );
       case 6:
         return (
           <BookingConfirmation
-            bookingData={bookingData}
-            onNewBooking={() => {
+            isOpen={true}
+            bookingDetails={bookingDetails}
+            onClose={() => {
               navigate('/book-online');
               window.location.reload();
             }}
-            onViewBookings={() => navigate('/my-bookings')}
           />
         );
       default:
@@ -219,9 +244,8 @@ const BookingFlow = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <BookingProgressIndicator
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={goToStep}
+            currentStep={step}
+            maxStep={6}
           />
 
           {error && (

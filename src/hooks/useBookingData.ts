@@ -31,9 +31,12 @@ interface TimeSlot {
 export const useBookingData = () => {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
+  const [beautyservices, setBeautyservices] = useState<Service[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [monthlyBookedData, setMonthlyBookedData] = useState<{[key: string]: string[]}>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingSlots, setIsFetchingSlots] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch services
@@ -59,6 +62,7 @@ export const useBookingData = () => {
             const data = await response.json();
             console.log('Services fetched from Spring Boot backend:', data);
             setServices(data);
+            setBeautyservices(data);
             return;
           } else {
             console.log('Spring Boot response not ok:', response.status, response.statusText);
@@ -70,11 +74,13 @@ export const useBookingData = () => {
         // Fallback to local data
         console.log('Using local services data as fallback');
         setServices(servicesData);
+        setBeautyservices(servicesData);
         
       } catch (error: any) {
         console.error('Error fetching services:', error);
         setError('Failed to load services');
         setServices(servicesData); // Fallback to local data
+        setBeautyservices(servicesData);
       } finally {
         setIsLoading(false);
       }
@@ -127,6 +133,7 @@ export const useBookingData = () => {
   // Fetch time slots
   const fetchTimeSlots = useCallback(async (serviceId: string, technicianId: string, serviceType: string, date?: string) => {
     try {
+      setIsFetchingSlots(true);
       console.log('Fetching time slots from Spring Boot backend...', { serviceId, technicianId, serviceType, date });
       
       const queryParams = new URLSearchParams({
@@ -135,8 +142,6 @@ export const useBookingData = () => {
         serviceType,
         ...(date && { date })
       });
-      
-      let bookedSlots: TimeSlot[] = [];
       
       // Try Spring Boot backend first
       try {
@@ -184,15 +189,65 @@ export const useBookingData = () => {
     } catch (error: any) {
       console.error('Error fetching time slots:', error);
       setError('Failed to load available time slots');
+    } finally {
+      setIsFetchingSlots(false);
     }
   }, [user]);
 
+  // Fetch monthly booked data
+  const fetchMonthlyBookedData = useCallback(async (month: Date, technicianId: string) => {
+    try {
+      setIsFetchingSlots(true);
+      
+      // Mock monthly data for demo
+      const mockData: {[key: string]: string[]} = {};
+      const year = month.getFullYear();
+      const monthIndex = month.getMonth();
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const numBookedSlots = Math.floor(Math.random() * 8);
+        const bookedSlots = [];
+        
+        for (let i = 0; i < numBookedSlots; i++) {
+          const hour = 9 + Math.floor(Math.random() * 9);
+          const minute = Math.random() > 0.5 ? '30' : '00';
+          bookedSlots.push(`${String(hour).padStart(2, '0')}:${minute}`);
+        }
+        
+        mockData[dateKey] = [...new Set(bookedSlots)]; // Remove duplicates
+      }
+      
+      setMonthlyBookedData(mockData);
+    } catch (error: any) {
+      console.error('Error fetching monthly booked data:', error);
+    } finally {
+      setIsFetchingSlots(false);
+    }
+  }, []);
+
+  const clearBookedSlots = useCallback(() => {
+    setMonthlyBookedData({});
+  }, []);
+
+  const refreshBookedSlots = useCallback(async () => {
+    // Refresh current slots if needed
+    console.log('Refreshing booked slots...');
+  }, []);
+
   return {
     services,
+    beautyservices,
     technicians,
     timeSlots,
+    monthlyBookedData,
     isLoading,
+    isFetchingSlots,
     error,
-    fetchTimeSlots
+    fetchTimeSlots,
+    fetchMonthlyBookedData,
+    clearBookedSlots,
+    refreshBookedSlots
   };
 };
