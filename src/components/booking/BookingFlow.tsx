@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBookingFlow } from '@/hooks/booking/useBookingFlow';
 import { useBookingData } from '@/hooks/useBookingData';
 import BookingProgressIndicator from './BookingProgressIndicator';
-import ServiceSelection from './ServiceSelection';
+import MultiServiceSelection from './MultiServiceSelection';
 import TechnicianAndTypeSelection from './TechnicianAndTypeSelection';
 import DateTimeSelection from './DateTimeSelection';
 import CustomerInformation from './CustomerInformation';
@@ -180,11 +180,11 @@ const BookingFlow = () => {
     switch (step) {
       case 1:
         return (
-          <ServiceSelection
-            {...commonProps}
+          <MultiServiceSelection
             services={services}
-            selectedService={selectedService}
-            onServiceSelect={setSelectedService}
+            selectedServices={selectedServices}
+            onServiceToggle={handleServiceToggle}
+            onRemoveService={handleRemoveService}
           />
         );
       case 2:

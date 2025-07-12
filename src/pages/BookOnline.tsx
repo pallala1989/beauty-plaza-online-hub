@@ -3,7 +3,7 @@ import React from "react";
 import BookingProgressIndicator from "@/components/booking/BookingProgressIndicator";
 import BookingNavigation from "@/components/booking/BookingNavigation";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
-import ServiceSelection from "@/components/booking/ServiceSelection";
+import MultiServiceSelection from "@/components/booking/MultiServiceSelection";
 import TechnicianAndTypeSelection from "@/components/booking/TechnicianAndTypeSelection";
 import DateTimeSelection from "@/components/booking/DateTimeSelection";
 import CustomerInformation from "@/components/booking/CustomerInformation";
@@ -114,10 +114,11 @@ const BookOnline = () => {
     switch (step) {
       case 1:
         return (
-          <ServiceSelection
+          <MultiServiceSelection
             services={services}
-            selectedService={selectedService}
-            onServiceSelect={setSelectedService}
+            selectedServices={selectedServices}
+            onServiceToggle={handleServiceToggle}
+            onRemoveService={handleRemoveService}
           />
         );
       case 2:
@@ -161,7 +162,7 @@ const BookOnline = () => {
             <CustomerInformation
               customerInfo={customerInfo}
               serviceType={serviceType}
-              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
               selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
               selectedDate={selectedDate}
               selectedTime={selectedTime}
@@ -177,7 +178,7 @@ const BookOnline = () => {
             <CustomerInformation
               customerInfo={customerInfo}
               serviceType={serviceType}
-              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
               selectedTechnician={technicians.find(t => t.id === selectedTechnician)}
               selectedDate={selectedDate}
               selectedTime={selectedTime}
@@ -189,7 +190,7 @@ const BookOnline = () => {
         } else if (isAdminMode) {
           return (
             <PaymentStep
-              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
               customerInfo={customerInfo}
               onPaymentComplete={handlePaymentComplete}
               onSkipPayment={handleSkipPayment}
@@ -201,7 +202,7 @@ const BookOnline = () => {
         if (serviceType === "in-home" && isAdminMode) {
           return (
             <PaymentStep
-              selectedServices={services.filter(s => selectedServices.includes(s.id))}
+              selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
               customerInfo={customerInfo}
               onPaymentComplete={handlePaymentComplete}
               onSkipPayment={handleSkipPayment}
