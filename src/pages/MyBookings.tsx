@@ -64,22 +64,45 @@ const MyBookings = () => {
       console.log('Fetched appointments:', data);
       
       // Transform the data to match expected types, handling potential query errors
-      const transformedAppointments: Appointment[] = (data || []).map(appointment => ({
-        id: appointment.id,
-        appointment_date: appointment.appointment_date,
-        appointment_time: appointment.appointment_time,
-        status: appointment.status || 'scheduled',
-        service_type: appointment.service_type || 'in-store',
-        notes: appointment.notes,
-        total_amount: appointment.total_amount,
-        customer_phone: appointment.customer_phone,
-        services: appointment.services && typeof appointment.services === 'object' && 'name' in appointment.services
-          ? appointment.services as { name: string; price: number; duration: number }
-          : null,
-        technicians: appointment.technicians && typeof appointment.technicians === 'object' && 'name' in appointment.technicians
-          ? appointment.technicians as { name: string; specialties: string[] }
-          : null
-      }));
+      const transformedAppointments: Appointment[] = (data || []).map(appointment => {
+        // Handle services relationship
+        let servicesData: { name: string; price: number; duration: number } | null = null;
+        if (appointment.services && typeof appointment.services === 'object' && !Array.isArray(appointment.services)) {
+          const services = appointment.services as any;
+          if (services.name) {
+            servicesData = {
+              name: services.name,
+              price: services.price || 0,
+              duration: services.duration || 0
+            };
+          }
+        }
+
+        // Handle technicians relationship
+        let techniciansData: { name: string; specialties: string[] } | null = null;
+        if (appointment.technicians && typeof appointment.technicians === 'object' && !Array.isArray(appointment.technicians)) {
+          const technicians = appointment.technicians as any;
+          if (technicians && technicians.name) {
+            techniciansData = {
+              name: technicians.name,
+              specialties: technicians.specialties || []
+            };
+          }
+        }
+
+        return {
+          id: appointment.id,
+          appointment_date: appointment.appointment_date,
+          appointment_time: appointment.appointment_time,
+          status: appointment.status || 'scheduled',
+          service_type: appointment.service_type || 'in-store',
+          notes: appointment.notes,
+          total_amount: appointment.total_amount,
+          customer_phone: appointment.customer_phone,
+          services: servicesData,
+          technicians: techniciansData
+        };
+      });
       
       setAppointments(transformedAppointments);
     } catch (error) {
