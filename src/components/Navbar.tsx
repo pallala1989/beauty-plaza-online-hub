@@ -14,7 +14,7 @@ import {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   // Close mobile menu when route changes
@@ -23,7 +23,7 @@ const Navbar = () => {
   }, [location.pathname]);
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     navigate('/');
   };
 

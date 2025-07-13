@@ -29,6 +29,10 @@ interface TimeSlot {
   booked?: boolean;
 }
 
+interface AvailableSlot {
+  time_slot: string;
+}
+
 export const useBookingData = () => {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>(servicesData);
@@ -98,7 +102,7 @@ export const useBookingData = () => {
   }, []);
 
   // Optimized time slots fetch using Supabase function
-  const fetchTimeSlots = useCallback(async (serviceId: string, technicianId: string, serviceType: string, date?: string) => {
+  const fetchTimeSlots = useCallback(async (serviceId?: string, technicianId?: string, serviceType?: string, date?: string) => {
     if (!date || !technicianId) return;
     
     try {
@@ -129,12 +133,12 @@ export const useBookingData = () => {
         return;
       }
       
-      // Convert database response to TimeSlot format
-      const availableSlots: TimeSlot[] = data?.map((slot: any) => ({
+      // Convert database response to TimeSlot format with proper null checks
+      const availableSlots: TimeSlot[] = (data || []).map((slot: AvailableSlot) => ({
         time: slot.time_slot,
         available: true,
         booked: false
-      })) || [];
+      }));
       
       console.log('Available slots from database:', availableSlots);
       setTimeSlots(availableSlots);
@@ -170,9 +174,9 @@ export const useBookingData = () => {
         return;
       }
       
-      // Group bookings by date
+      // Group bookings by date with proper null checks
       const monthlyData: {[key: string]: string[]} = {};
-      data?.forEach(appointment => {
+      (data || []).forEach(appointment => {
         const dateKey = appointment.appointment_date;
         if (!monthlyData[dateKey]) {
           monthlyData[dateKey] = [];

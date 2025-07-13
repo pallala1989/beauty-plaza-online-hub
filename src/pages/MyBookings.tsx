@@ -62,7 +62,26 @@ const MyBookings = () => {
       }
       
       console.log('Fetched appointments:', data);
-      setAppointments(data || []);
+      
+      // Transform the data to match expected types, handling potential query errors
+      const transformedAppointments: Appointment[] = (data || []).map(appointment => ({
+        id: appointment.id,
+        appointment_date: appointment.appointment_date,
+        appointment_time: appointment.appointment_time,
+        status: appointment.status || 'scheduled',
+        service_type: appointment.service_type || 'in-store',
+        notes: appointment.notes,
+        total_amount: appointment.total_amount,
+        customer_phone: appointment.customer_phone,
+        services: appointment.services && typeof appointment.services === 'object' && 'name' in appointment.services
+          ? appointment.services as { name: string; price: number; duration: number }
+          : null,
+        technicians: appointment.technicians && typeof appointment.technicians === 'object' && 'name' in appointment.technicians
+          ? appointment.technicians as { name: string; specialties: string[] }
+          : null
+      }));
+      
+      setAppointments(transformedAppointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
     } finally {
