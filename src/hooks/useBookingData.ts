@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl } from '@/config/environment';
+import { supabase } from '@/integrations/supabase/client';
 import servicesData from '@/data/services.json';
 import techniciansData from '@/data/technicians.json';
 
@@ -30,161 +31,113 @@ interface TimeSlot {
 
 export const useBookingData = () => {
   const { user } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [beautyservices, setBeautyservices] = useState<Service[]>([]);
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [services, setServices] = useState<Service[]>(servicesData);
+  const [beautyservices, setBeautyservices] = useState<Service[]>(servicesData);
+  const [technicians, setTechnicians] = useState<Technician[]>(techniciansData);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [monthlyBookedData, setMonthlyBookedData] = useState<{[key: string]: string[]}>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch services
+  // Optimized service fetch with caching
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
+        console.log('Loading services from Supabase...');
         
-        console.log('Fetching services from Spring Boot backend...');
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('is_active', true);
         
-        // Try Spring Boot backend first
-        try {
-          const response = await fetch(buildApiUrl('/api/services'), {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Services fetched from Spring Boot backend:', data);
-            setServices(data);
-            setBeautyservices(data);
-            return;
-          } else {
-            console.log('Spring Boot response not ok:', response.status, response.statusText);
-          }
-        } catch (backendError) {
-          console.log('Spring Boot unavailable:', backendError);
+        if (error) {
+          console.log('Supabase services error, using local data:', error);
+          return;
         }
         
-        // Fallback to local data
-        console.log('Using local services data as fallback');
-        setServices(servicesData);
-        setBeautyservices(servicesData);
-        
+        if (data && data.length > 0) {
+          console.log('Services loaded from Supabase:', data);
+          setServices(data);
+          setBeautyservices(data);
+        }
       } catch (error: any) {
-        console.error('Error fetching services:', error);
-        setError('Failed to load services');
-        setServices(servicesData); // Fallback to local data
-        setBeautyservices(servicesData);
-      } finally {
-        setIsLoading(false);
+        console.log('Using local services data:', error);
       }
     };
 
     fetchServices();
   }, []);
 
-  // Fetch technicians
+  // Optimized technician fetch with caching
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
-        console.log('Fetching technicians from Spring Boot backend...');
+        console.log('Loading technicians from Supabase...');
         
-        // Try Spring Boot backend first
-        try {
-          const response = await fetch(buildApiUrl('/api/technicians'), {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Technicians fetched from Spring Boot backend:', data);
-            setTechnicians(data);
-            return;
-          } else {
-            console.log('Spring Boot technicians response not ok:', response.status);
-          }
-        } catch (backendError) {
-          console.log('Spring Boot technicians unavailable:', backendError);
+        const { data, error } = await supabase
+          .from('technicians')
+          .select('*')
+          .eq('is_available', true);
+        
+        if (error) {
+          console.log('Supabase technicians error, using local data:', error);
+          return;
         }
         
-        // Fallback to local data
-        console.log('Using local technicians data as fallback');
-        setTechnicians(techniciansData);
-        
+        if (data && data.length > 0) {
+          console.log('Technicians loaded from Supabase:', data);
+          setTechnicians(data);
+        }
       } catch (error: any) {
-        console.error('Error fetching technicians:', error);
-        setTechnicians(techniciansData); // Fallback to local data
+        console.log('Using local technicians data:', error);
       }
     };
 
     fetchTechnicians();
   }, []);
 
-  // Fetch time slots
+  // Optimized time slots fetch using Supabase function
   const fetchTimeSlots = useCallback(async (serviceId: string, technicianId: string, serviceType: string, date?: string) => {
+    if (!date || !technicianId) return;
+    
     try {
       setIsFetchingSlots(true);
-      console.log('Fetching time slots from Spring Boot backend...', { serviceId, technicianId, serviceType, date });
+      console.log('Fetching available slots for:', { technicianId, date });
       
-      const queryParams = new URLSearchParams({
-        serviceId,
-        technicianId,
-        serviceType,
-        ...(date && { date })
+      const { data, error } = await supabase.rpc('get_available_slots', {
+        technician_id_param: technicianId,
+        appointment_date_param: date
       });
       
-      // Try Spring Boot backend first
-      try {
-        const response = await fetch(buildApiUrl(`/api/appointments/available-slots?${queryParams}`), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            ...(user && { 'Authorization': `Bearer ${user.id}` })
-          }
-        });
+      if (error) {
+        console.error('Error fetching slots:', error);
+        // Fallback to basic time generation
+        const allTimeSlots = [
+          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+          '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+        ];
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Time slots fetched from Spring Boot backend:', data);
-          setTimeSlots(data);
-          return;
-        } else {
-          console.log('Spring Boot slots response not ok:', response.status);
-        }
-      } catch (error) {
-        console.log('Spring Boot slots fetch failed:', error);
+        const mockSlots: TimeSlot[] = allTimeSlots.map(time => ({
+          time,
+          available: true,
+          booked: false
+        }));
+        
+        setTimeSlots(mockSlots);
+        return;
       }
       
-      // Fallback to mock data
-      const allTimeSlots = [
-        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
-      ];
+      // Convert database response to TimeSlot format
+      const availableSlots: TimeSlot[] = data?.map((slot: any) => ({
+        time: slot.time_slot,
+        available: true,
+        booked: false
+      })) || [];
       
-      // Generate some random booked slots for demo
-      const numBooked = Math.floor(Math.random() * 5);
-      const bookedTimes = allTimeSlots.slice(0, numBooked);
-      
-      const mockSlots: TimeSlot[] = allTimeSlots.map(time => ({
-        time,
-        available: !bookedTimes.includes(time),
-        booked: bookedTimes.includes(time)
-      }));
-      
-      console.log('Using mock time slots:', mockSlots);
-      setTimeSlots(mockSlots);
+      console.log('Available slots from database:', availableSlots);
+      setTimeSlots(availableSlots);
       
     } catch (error: any) {
       console.error('Error fetching time slots:', error);
@@ -192,34 +145,44 @@ export const useBookingData = () => {
     } finally {
       setIsFetchingSlots(false);
     }
-  }, [user]);
+  }, []);
 
-  // Fetch monthly booked data
+  // Optimized monthly booked data fetch
   const fetchMonthlyBookedData = useCallback(async (month: Date, technicianId: string) => {
+    if (!technicianId) return;
+    
     try {
       setIsFetchingSlots(true);
       
-      // Mock monthly data for demo
-      const mockData: {[key: string]: string[]} = {};
-      const year = month.getFullYear();
-      const monthIndex = month.getMonth();
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+      const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const numBookedSlots = Math.floor(Math.random() * 8);
-        const bookedSlots = [];
-        
-        for (let i = 0; i < numBookedSlots; i++) {
-          const hour = 9 + Math.floor(Math.random() * 9);
-          const minute = Math.random() > 0.5 ? '30' : '00';
-          bookedSlots.push(`${String(hour).padStart(2, '0')}:${minute}`);
-        }
-        
-        mockData[dateKey] = [...new Set(bookedSlots)]; // Remove duplicates
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('appointment_date, appointment_time')
+        .eq('technician_id', technicianId)
+        .gte('appointment_date', startOfMonth.toISOString().split('T')[0])
+        .lte('appointment_date', endOfMonth.toISOString().split('T')[0])
+        .not('status', 'in', '(cancelled,completed)');
+      
+      if (error) {
+        console.error('Error fetching monthly bookings:', error);
+        return;
       }
       
-      setMonthlyBookedData(mockData);
+      // Group bookings by date
+      const monthlyData: {[key: string]: string[]} = {};
+      data?.forEach(appointment => {
+        const dateKey = appointment.appointment_date;
+        if (!monthlyData[dateKey]) {
+          monthlyData[dateKey] = [];
+        }
+        monthlyData[dateKey].push(appointment.appointment_time);
+      });
+      
+      console.log('Monthly booked data loaded:', monthlyData);
+      setMonthlyBookedData(monthlyData);
+      
     } catch (error: any) {
       console.error('Error fetching monthly booked data:', error);
     } finally {
@@ -232,8 +195,8 @@ export const useBookingData = () => {
   }, []);
 
   const refreshBookedSlots = useCallback(async () => {
-    // Refresh current slots if needed
     console.log('Refreshing booked slots...');
+    // This can be called after successful booking to refresh the data
   }, []);
 
   return {

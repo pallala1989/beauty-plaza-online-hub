@@ -1,248 +1,227 @@
 
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone, User, LogOut, Settings, Calendar, Users, BarChart3 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSettings } from "@/hooks/useSettings";
-import { LucideIcon } from "lucide-react";
-
-interface NavigationItem {
-  name: string;
-  href: string;
-  icon?: LucideIcon;
-}
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, User, LogOut, Calendar, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
-  const { user, profile, signOut } = useAuth();
-  const { settings, isLoading } = useSettings();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Get navigation settings with defaults
-  const navSettings = settings?.navigation_settings || {
-    show_promotions: true,
-    show_loyalty: true,
-    show_gift_cards: true,
-    show_refer_friend: true
-  };
-
-  const baseNavigation: NavigationItem[] = [
-    { name: "Home", href: "/" },
-    { name: "Services", href: "/services" },
-    { name: "Book Online", href: "/book-online" },
-    { name: "Contact", href: "/contact" },
-  ];
-
-  const conditionalNavigation: NavigationItem[] = [
-    ...(navSettings.show_gift_cards ? [{ name: "Gift Cards", href: "/gift-card" }] : []),
-    ...(navSettings.show_loyalty ? [{ name: "Loyalty", href: "/loyalty" }] : []),
-    ...(navSettings.show_refer_friend ? [{ name: "Refer Friend", href: "/refer-friend" }] : []),
-    ...(navSettings.show_promotions ? [{ name: "Promotions", href: "/promotions" }] : []),
-  ];
-
-  // Role-specific navigation
-  const getRoleSpecificNavigation = (): NavigationItem[] => {
-    if (!profile?.role) return [];
-    
-    if (profile.role === 'admin') {
-      return [
-        { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
-        { name: "Settings", href: "/admin-settings", icon: Settings },
-        { name: "Appointments", href: "/admin/appointments", icon: Calendar },
-        { name: "Manage Staff", href: "/admin/staff", icon: Users }
-      ];
-    }
-    
-    if (profile.role === 'technician') {
-      return [
-        { name: "My Schedule", href: "/technician/schedule", icon: Calendar },
-        { name: "My Appointments", href: "/technician/appointments", icon: Calendar }
-      ];
-    }
-    
-    if (profile.role === 'user') {
-      return [
-        { name: "My Bookings", href: "/my-bookings", icon: Calendar }
-      ];
-    }
-    
-    return [];
-  };
-
-  const navigation: NavigationItem[] = user ? 
-    [...baseNavigation, ...conditionalNavigation, ...getRoleSpecificNavigation()] :
-    [...baseNavigation, ...conditionalNavigation];
-
-  const isActive = (href: string) => location.pathname === href;
-
-  const handleSignOut = async () => {
-    await signOut();
+  // Close mobile menu when route changes
+  useEffect(() => {
     setIsOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
-  // Show loading state if settings are still loading
-  if (isLoading) {
-    return (
-      <nav className="bg-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                Beauty Plaza
-              </div>
-            </Link>
-            <div className="text-sm text-gray-500">Loading...</div>
-          </div>
-        </div>
-      </nav>
-    );
-  }
+  const isAdmin = user?.role === 'admin';
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <div className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+          <Link to="/" className="flex-shrink-0">
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
               Beauty Plaza
-            </div>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-pink-600 flex items-center ${
-                  isActive(item.href) ? "text-pink-600" : "text-gray-700"
-                }`}
-              >
-                {item.icon && (
-                  <item.icon className="w-4 h-4 mr-1" />
-                )}
-                {item.name}
-              </Link>
-            ))}
-          </div>
-
-          {/* Call Now & Auth Buttons */}
-          <div className="hidden lg:flex items-center space-x-4">
-            <Button
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
-              onClick={() => window.open(`tel:${settings?.contact_phone || '+19039210271'}`, "_self")}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link 
+              to="/" 
+              className="text-gray-700 hover:text-pink-600 transition-colors font-medium"
             >
-              <Phone className="w-4 h-4 mr-2" />
-              Call Now
-            </Button>
+              Home
+            </Link>
+            <Link 
+              to="/services" 
+              className="text-gray-700 hover:text-pink-600 transition-colors font-medium"
+            >
+              Services
+            </Link>
+            <Link 
+              to="/book-online" 
+              className="text-gray-700 hover:text-pink-600 transition-colors font-medium"
+            >
+              Book Online
+            </Link>
+            <Link 
+              to="/contact" 
+              className="text-gray-700 hover:text-pink-600 transition-colors font-medium"
+            >
+              Contact
+            </Link>
             
+            {/* User Menu */}
             {user ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/profile">
-                  <Button variant="outline" className="flex items-center">
-                    <User className="w-4 h-4 mr-2" />
-                    {profile?.full_name || profile?.name || 'Profile'}
-                    {profile?.role && (
-                      <span className="ml-2 text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
-                        {profile.role}
-                      </span>
-                    )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">{user.name || 'Account'}</span>
                   </Button>
-                </Link>
-                <Button 
-                  variant="outline" 
-                  onClick={handleSignOut}
-                  className="flex items-center"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-bookings" className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      My Bookings
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center text-red-600">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <Link to="/login">
-                  <Button variant="outline">Login</Button>
+                  <Button variant="outline" size="sm">Login</Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-pink-600 hover:bg-pink-700">Sign Up</Button>
+                  <Button size="sm" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                    Sign Up
+                  </Button>
                 </Link>
               </div>
             )}
           </div>
 
           {/* Mobile menu button */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" className="lg:hidden">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <div className="flex flex-col space-y-4 mt-4">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`text-lg font-medium transition-colors hover:text-pink-600 flex items-center ${
-                      isActive(item.href) ? "text-pink-600" : "text-gray-700"
-                    }`}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-gray-700"
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="md:hidden border-t border-gray-200 pb-4">
+            <div className="pt-4 space-y-2">
+              <Link 
+                to="/" 
+                className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Home
+              </Link>
+              <Link 
+                to="/services" 
+                className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Services
+              </Link>
+              <Link 
+                to="/book-online" 
+                className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Book Online
+              </Link>
+              <Link 
+                to="/contact" 
+                className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Contact
+              </Link>
+              
+              {user ? (
+                <>
+                  <div className="border-t border-gray-200 pt-4">
+                    <Link 
+                      to="/profile" 
+                      className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link 
+                      to="/my-bookings" 
+                      className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      My Bookings
+                    </Link>
+                    {isAdmin && (
+                      <Link 
+                        to="/admin" 
+                        className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button 
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="border-t border-gray-200 pt-4 space-y-2">
+                  <Link 
+                    to="/login" 
+                    className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    {item.icon && (
-                      <item.icon className="w-5 h-5 mr-2" />
-                    )}
-                    {item.name}
+                    Login
                   </Link>
-                ))}
-                <div className="pt-4 space-y-2">
-                  <Button
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                    onClick={() => window.open(`tel:${settings?.contact_phone || '+19039210271'}`, "_self")}
+                  <Link 
+                    to="/register" 
+                    className="block px-3 py-2 text-gray-700 hover:text-pink-600 transition-colors"
+                    onClick={() => setIsOpen(false)}
                   >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call Now
-                  </Button>
-                  
-                  {user ? (
-                    <>
-                      <Link to="/profile" onClick={() => setIsOpen(false)}>
-                        <Button variant="outline" className="w-full">
-                          <User className="w-4 h-4 mr-2" />
-                          {profile?.full_name || profile?.name || 'Profile'}
-                          {profile?.role && (
-                            <span className="ml-2 text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">
-                              {profile.role}
-                            </span>
-                          )}
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={handleSignOut}
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Link to="/login" onClick={() => setIsOpen(false)}>
-                        <Button variant="outline" className="w-full">Login</Button>
-                      </Link>
-                      <Link to="/register" onClick={() => setIsOpen(false)}>
-                        <Button className="w-full bg-pink-600 hover:bg-pink-700">Sign Up</Button>
-                      </Link>
-                    </>
-                  )}
+                    Sign Up
+                  </Link>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

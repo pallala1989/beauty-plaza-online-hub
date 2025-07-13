@@ -1,8 +1,7 @@
 
-import emailjs from '@emailjs/browser';
-import { format } from "date-fns";
+import { supabase } from '@/integrations/supabase/client';
 
-interface EmailData {
+interface ConfirmationEmailData {
   services: any[];
   technicians: any[];
   selectedService: string;
@@ -11,69 +10,55 @@ interface EmailData {
   selectedDate: Date;
   selectedTime: string;
   serviceType: string;
-  customerInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    notes: string;
-  };
+  customerInfo: any;
   totalAmount: number;
   loyaltyPointsUsed?: number;
   loyaltyDiscount?: number;
 }
 
-export const sendConfirmationEmail = async (emailData: EmailData) => {
+export const sendConfirmationEmail = async (data: ConfirmationEmailData) => {
   try {
-    // Initialize EmailJS
-    emailjs.init('UmpeYlneD0XdC7d7D');
-
-    // Handle multiple services or single service
-    const serviceIds = emailData.selectedServices && emailData.selectedServices.length > 0 
-      ? emailData.selectedServices 
-      : [emailData.selectedService];
+    console.log('Sending confirmation email with data:', data);
     
-    const selectedServiceDetails = emailData.services.filter(s => 
-      serviceIds.includes(s.id.toString())
+    // Prepare email data
+    const selectedServiceDetails = data.services.filter(s => 
+      data.selectedServices?.includes(s.id.toString()) || [data.selectedService].includes(s.id.toString())
     );
     
-    const selectedTechnicianDetails = emailData.technicians.find(t => t.id === emailData.selectedTechnician);
-
-    // Create service names list for email
-    const serviceNames = selectedServiceDetails.map(s => s.name).join(', ');
-    const servicePrices = selectedServiceDetails.map(s => `${s.name}: $${s.price}`).join(' | ');
-
-    // Prepare template variables to match your EmailJS template
-    const templateParams = {
-      to_email: emailData.customerInfo.email,
-      customerInfo_name: emailData.customerInfo.name,
-      customerInfo_email: emailData.customerInfo.email,
-      customerInfo_phone: emailData.customerInfo.phone,
-      customerInfo_address: emailData.serviceType === 'in-home' ? emailData.customerInfo.address : '',
-      customerInfo_notes: emailData.customerInfo.notes,
-      selectedServiceDetails_name: serviceNames,
-      service_details: servicePrices,
-      selectedTechnicianDetails_name: selectedTechnicianDetails?.name || 'Our Team',
-      appointment_date: format(emailData.selectedDate, 'MMMM dd, yyyy'),
-      appointment_time: emailData.selectedTime,
-      serviceType: emailData.serviceType === 'in-home' ? 'In-Home Service' : 'In-Store Service',
-      serviceType_in_home: emailData.serviceType === 'in-home',
-      loyaltyPointsUsed: emailData.loyaltyPointsUsed || 0,
-      loyaltyDiscount: emailData.loyaltyDiscount ? emailData.loyaltyDiscount.toFixed(2) : null,
-      totalAmount: emailData.totalAmount.toFixed(2),
-      booking_confirmation: `APT-${Date.now()}`,
-      company_name: 'Beauty Plaza'
+    const technicianName = data.technicians.find(t => t.id === data.selectedTechnician)?.name || 'Assigned Technician';
+    
+    const emailData = {
+      customerEmail: data.customerInfo.email,
+      customerName: data.customerInfo.name,
+      adminEmail: 'admin-beatyplaza@gmail.com', // Admin copy email
+      services: selectedServiceDetails.map(s => s.name).join(', '),
+      technician: technicianName,
+      appointmentDate: data.selectedDate.toLocaleDateString(),
+      appointmentTime: data.selectedTime,
+      serviceType: data.serviceType,
+      totalAmount: data.totalAmount,
+      loyaltyPointsUsed: data.loyaltyPointsUsed || 0,
+      loyaltyDiscount: data.loyaltyDiscount || 0,
+      notes: data.customerInfo.notes || '',
+      address: data.serviceType === 'in-home' ? data.customerInfo.address : ''
     };
 
-    // Send email using the apt_conf template
-    await emailjs.send(
-      'service_e4fqv58',
-      'apt_conf',
-      templateParams
-    );
+    // Call the email edge function
+    const { data: response, error } = await supabase.functions.invoke('send-appointment-confirmation', {
+      body: emailData
+    });
 
-    console.log('Appointment confirmation email sent successfully');
+    if (error) {
+      console.error('Error sending confirmation email:', error);
+      throw error;
+    }
+
+    console.log('Confirmation email sent successfully:', response);
+    return response;
+    
   } catch (error) {
-    console.error('Error sending confirmation email:', error);
+    console.error('Failed to send confirmation email:', error);
+    // Don't throw error to prevent booking failure due to email issues
+    return null;
   }
 };

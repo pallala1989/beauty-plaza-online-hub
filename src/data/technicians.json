@@ -2,26 +2,14 @@
 [
   {
     "id": "1",
-    "name": "Sarah Johnson",
-    "specialties": ["Facial", "Anti-Aging"],
+    "name": "Yashu",
+    "specialties": ["Facial", "Anti-Aging", "Hair", "Color", "Makeup", "Bridal", "Waxing", "Nails", "Eyebrow Threading"],
     "is_available": true
   },
   {
-    "id": "2",
-    "name": "Emma Davis",
-    "specialties": ["Hair", "Color"],
-    "is_available": true
-  },
-  {
-    "id": "3",
-    "name": "Lisa Chen",
-    "specialties": ["Makeup", "Bridal"],
-    "is_available": true
-  },
-  {
-    "id": "4",
-    "name": "Maria Rodriguez",
-    "specialties": ["Waxing", "Nails"],
+    "id": "2", 
+    "name": "Maneesha",
+    "specialties": ["Facial", "Anti-Aging", "Hair", "Color", "Makeup", "Bridal", "Waxing", "Nails", "Eyebrow Threading"],
     "is_available": true
   }
 ]

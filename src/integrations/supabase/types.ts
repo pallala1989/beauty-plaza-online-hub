@@ -14,8 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_slots: {
+        Row: {
+          appointment_date: string
+          appointment_time: string
+          created_at: string | null
+          id: string
+          is_available: boolean | null
+          technician_id: string | null
+        }
+        Insert: {
+          appointment_date: string
+          appointment_time: string
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          technician_id?: string | null
+        }
+        Update: {
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          technician_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_slots_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
+          actual_technician_id: string | null
           appointment_date: string
           appointment_time: string
           created_at: string | null
@@ -33,6 +69,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          actual_technician_id?: string | null
           appointment_date: string
           appointment_time: string
           created_at?: string | null
@@ -50,6 +87,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          actual_technician_id?: string | null
           appointment_date?: string
           appointment_time?: string
           created_at?: string | null
@@ -68,6 +106,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointments_actual_technician_id_fkey"
+            columns: ["actual_technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
@@ -82,6 +127,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_hours: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_open: boolean | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_open?: boolean | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_open?: boolean | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      business_settings: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       gift_cards: {
         Row: {
@@ -157,6 +265,60 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          created_at: string | null
+          currency: string | null
+          gift_card_id: string | null
+          id: string
+          payment_method: string
+          payment_status: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          gift_card_id?: string | null
+          id?: string
+          payment_method: string
+          payment_status?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          gift_card_id?: string | null
+          id?: string
+          payment_method?: string
+          payment_status?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

@@ -1,306 +1,188 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
+import AppointmentsManagement from '@/components/admin/AppointmentsManagement';
 import { 
-  Users, 
   Calendar, 
+  Users, 
   DollarSign, 
-  TrendingUp, 
-  Clock,
-  MapPin,
-  Mail,
-  Phone,
-  Star,
-  Settings
+  Settings,
+  BarChart3,
+  Clock
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useAppointments } from "@/hooks/useAppointments";
-import AppointmentsManagement from "@/components/admin/AppointmentsManagement";
-import InvoiceGenerator from "@/components/payment/InvoiceGenerator";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const { appointments, isLoading } = useAppointments();
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
 
-  // Calculate real-time statistics from appointments
-  const stats = React.useMemo(() => {
-    if (!appointments) return { totalRevenue: 0, totalAppointments: 0, pendingAppointments: 0, completedAppointments: 0 };
-    
-    const totalRevenue = appointments.reduce((sum, apt) => sum + (apt.total_amount || 0), 0);
-    const totalAppointments = appointments.length;
-    const pendingAppointments = appointments.filter(apt => apt.status === 'scheduled' || apt.status === 'confirmed').length;
-    const completedAppointments = appointments.filter(apt => apt.status === 'completed').length;
-    
-    return { totalRevenue, totalAppointments, pendingAppointments, completedAppointments };
-  }, [appointments]);
-
-  const handlePrintInvoice = (appointment: any) => {
-    const invoiceData = {
-      id: appointment.id,
-      services: [{
-        name: appointment.service?.name || 'Service',
-        price: appointment.total_amount || 0,
-        duration: appointment.service?.duration || 60
-      }],
-      subtotal: appointment.total_amount || 0,
-      tip: 0,
-      pointsUsed: 0,
-      pointsDiscount: 0,
-      total: appointment.total_amount || 0,
-      paymentMethod: 'card',
-      timestamp: new Date().toISOString()
-    };
-
-    setSelectedAppointment({
-      ...appointment,
-      invoiceData
-    });
-    setShowInvoice(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-      case 'scheduled':
-        return "bg-green-100 text-green-800";
-      case 'pending':
-        return "bg-yellow-100 text-yellow-800";
-      case 'cancelled':
-        return "bg-red-100 text-red-800";
-      case 'completed':
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Quick action handlers
-  const handleManageStaff = () => {
-    navigate('/admin/staff');
-  };
-
-  const handleViewSchedule = () => {
-    navigate('/admin/appointments');
-  };
-
-  const handleFinancialReports = () => {
-    navigate('/admin/reports');
-  };
-
-  const handleCustomerReviews = () => {
-    navigate('/admin/reviews');
-  };
-
-  const handleSettings = () => {
-    navigate('/admin-settings');
-  };
-
-  if (showInvoice && selectedAppointment) {
-    return (
-      <div className="print-invoice">
-        <InvoiceGenerator
-          invoiceData={selectedAppointment.invoiceData}
-          customerInfo={{
-            name: 'Customer',
-            email: selectedAppointment.customer_email || '',
-            phone: selectedAppointment.customer_phone || ''
-          }}
-          onClose={() => setShowInvoice(false)}
-        />
-      </div>
-    );
+  // Redirect if not admin
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/login" replace />;
   }
 
+  // Mock data for dashboard
+  const dashboardStats = {
+    totalAppointments: 24,
+    todayAppointments: 8,
+    totalRevenue: 2450,
+    activeCustomers: 156
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600 mt-1">Manage your beauty salon operations</p>
-          </div>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={handleSettings}
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </Button>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600 mt-2">Manage your beauty salon operations</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                +20.1% from last month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Appointments</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAppointments}</div>
-              <p className="text-xs text-muted-foreground">
-                +15% from last month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Appointments</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingAppointments}</div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting confirmation
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedAppointments}</div>
-              <p className="text-xs text-muted-foreground">
-                +8 from yesterday
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="appointments" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="staff">Manage Staff</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="appointments" className="space-y-4">
-            <AppointmentsManagement userRole="admin" />
-          </TabsContent>
-
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Appointments */}
+          <TabsContent value="overview" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Appointments</CardTitle>
-                  <CardDescription>Latest bookings and their status</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Appointments</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {isLoading ? (
-                      <div className="text-center">Loading...</div>
-                    ) : (
-                      appointments.slice(0, 5).map((appointment) => (
-                        <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">Customer</span>
-                              <Badge className={getStatusColor(appointment.status)}>
-                                {appointment.status}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              {appointment.service?.name} • {appointment.appointment_date} at {appointment.appointment_time}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-pink-600">${appointment.total_amount}</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handlePrintInvoice(appointment)}
-                            >
-                              Invoice
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <div className="text-2xl font-bold">{dashboardStats.totalAppointments}</div>
+                  <p className="text-xs text-muted-foreground">+12% from last month</p>
                 </CardContent>
               </Card>
 
-              {/* Quick Actions */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>Common administrative tasks</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button 
-                    className="w-full justify-start" 
-                    variant="outline"
-                    onClick={handleManageStaff}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Manage Staff
-                  </Button>
-                  <Button 
-                    className="w-full justify-start" 
-                    variant="outline"
-                    onClick={handleViewSchedule}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    View Schedule
-                  </Button>
-                  <Button 
-                    className="w-full justify-start" 
-                    variant="outline"
-                    onClick={handleFinancialReports}
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Financial Reports
-                  </Button>
-                  <Button 
-                    className="w-full justify-start" 
-                    variant="outline"
-                    onClick={handleCustomerReviews}
-                  >
-                    <Star className="w-4 h-4 mr-2" />
-                    Customer Reviews
-                  </Button>
+                <CardContent>
+                  <div className="text-2xl font-bold">{dashboardStats.todayAppointments}</div>
+                  <p className="text-xs text-muted-foreground">4 completed, 4 pending</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">${dashboardStats.totalRevenue}</div>
+                  <p className="text-xs text-muted-foreground">+8% from last month</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{dashboardStats.activeCustomers}</div>
+                  <p className="text-xs text-muted-foreground">+5% from last month</p>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
+            {/* Recent Activity */}
             <Card>
               <CardHeader>
-                <CardTitle>Analytics Dashboard</CardTitle>
-                <CardDescription>Business insights and performance metrics</CardDescription>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">New appointment booked</p>
+                      <p className="text-xs text-gray-500">Sarah Johnson - Facial Treatment - 2:00 PM</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Payment completed</p>
+                      <p className="text-xs text-gray-500">Emma Davis - Hair Color - $85</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Appointment rescheduled</p>
+                      <p className="text-xs text-gray-500">Lisa Chen - Makeup Session - Tomorrow 10:00 AM</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="appointments">
+            <AppointmentsManagement userRole="admin" />
+          </TabsContent>
+
+          <TabsContent value="staff">
+            <Card>
+              <CardHeader>
+                <CardTitle>Staff Management</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <TrendingUp className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600">Analytics dashboard coming soon...</p>
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management</h3>
+                  <p className="text-gray-500">
+                    Manage your technicians and staff members.
+                  </p>
+                  <div className="mt-6 space-y-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium">Current Staff:</h4>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-600">
+                        <li>• Yashu - All Services</li>
+                        <li>• Maneesha - All Services</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Settings</h3>
+                  <p className="text-gray-500">
+                    Configure your salon settings and preferences.
+                  </p>
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium">Business Hours</h4>
+                      <p className="text-sm text-gray-600 mt-1">Mon-Fri: 9:00 AM - 6:00 PM</p>
+                      <p className="text-sm text-gray-600">Sat: 9:00 AM - 5:00 PM</p>
+                      <p className="text-sm text-gray-600">Sun: Closed</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium">Contact Information</h4>
+                      <p className="text-sm text-gray-600 mt-1">Phone: +1-555-BEAUTY</p>
+                      <p className="text-sm text-gray-600">Email: admin-beatyplaza@gmail.com</p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
