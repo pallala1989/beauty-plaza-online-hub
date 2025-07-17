@@ -532,7 +532,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_loyalty_points: {
+        Args: { amount: number }
+        Returns: number
+      }
+      is_slot_available: {
+        Args: { p_date: string; p_time: string; p_technician_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: "admin" | "customer" | "technician"

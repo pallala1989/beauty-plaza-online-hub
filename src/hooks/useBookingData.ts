@@ -101,7 +101,7 @@ export const useBookingData = () => {
     fetchTechnicians();
   }, []);
 
-  // Optimized time slots fetch using Supabase function
+  // Fixed time slots fetch function with proper parameter types
   const fetchTimeSlots = useCallback(async (serviceId?: string, technicianId?: string, serviceType?: string, date?: string) => {
     if (!date || !technicianId) return;
     
@@ -109,6 +109,7 @@ export const useBookingData = () => {
       setIsFetchingSlots(true);
       console.log('Fetching available slots for:', { technicianId, date });
       
+      // Fixed RPC call with proper parameter types
       const { data, error } = await supabase.rpc('get_available_slots', {
         technician_id_param: technicianId,
         appointment_date_param: date

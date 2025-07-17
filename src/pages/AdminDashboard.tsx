@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import AppointmentsManagement from '@/components/admin/AppointmentsManagement';
+import SettingsManagement from '@/components/admin/SettingsManagement';
+import StaffManagement from '@/components/admin/StaffManagement';
 import { 
   Calendar, 
   Users, 
@@ -133,59 +135,11 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="staff">
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Staff Management</h3>
-                  <p className="text-gray-500">
-                    Manage your technicians and staff members.
-                  </p>
-                  <div className="mt-6 space-y-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium">Current Staff:</h4>
-                      <ul className="mt-2 space-y-1 text-sm text-gray-600">
-                        <li>• Yashu - All Services</li>
-                        <li>• Maneesha - All Services</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <StaffManagement />
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Settings</h3>
-                  <p className="text-gray-500">
-                    Configure your salon settings and preferences.
-                  </p>
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium">Business Hours</h4>
-                      <p className="text-sm text-gray-600 mt-1">Mon-Fri: 9:00 AM - 6:00 PM</p>
-                      <p className="text-sm text-gray-600">Sat: 9:00 AM - 5:00 PM</p>
-                      <p className="text-sm text-gray-600">Sun: Closed</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium">Contact Information</h4>
-                      <p className="text-sm text-gray-600 mt-1">Phone: +1-555-BEAUTY</p>
-                      <p className="text-sm text-gray-600">Email: admin-beatyplaza@gmail.com</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <SettingsManagement />
           </TabsContent>
         </Tabs>
       </div>

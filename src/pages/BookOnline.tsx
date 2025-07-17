@@ -17,12 +17,10 @@ import { Label } from "@/components/ui/label";
 const BookOnline = () => {
   const { user } = useAuth();
   const [isAdminMode, setIsAdminMode] = React.useState(false);
-  const [selectedCustomer, setSelectedCustomer] = React.useState(null);
 
   const {
     step,
     selectedServices,
-    selectedService,
     selectedTechnician,
     selectedDate,
     selectedTime,
@@ -39,7 +37,6 @@ const BookOnline = () => {
     bookedSlots,
     isFetchingSlots,
     fullyBookedDays,
-    setSelectedService,
     setSelectedTechnician,
     handleDateSelect,
     setSelectedTime,
@@ -59,14 +56,18 @@ const BookOnline = () => {
     handleMonthChange
   } = useBookingFlow();
 
-  // Check if user is admin/technician - fixed role comparison
-  const canUseAdminMode = user?.role === 'admin';
+  // Check if user is admin/technician
+  const canUseAdminMode = user?.role === 'admin' || user?.role === 'technician';
 
+  // Calculate max step based on admin mode and service type
   const maxStep = React.useMemo(() => {
     if (isAdminMode) {
-      return serviceType === "in-store" ? 5 : 6;
+      // Admin mode: Services -> Technician -> DateTime -> Customer -> Payment -> Confirmation
+      return 6;
+    } else {
+      // Regular mode depends on service type
+      return serviceType === "in-home" ? 5 : 4;
     }
-    return serviceType === "in-store" ? 4 : 5;
   }, [isAdminMode, serviceType]);
 
   const handleTechnicianSelect = (technicianId: string) => {
@@ -81,32 +82,13 @@ const BookOnline = () => {
     setCustomerInfo({...customerInfo, phone});
   };
 
-  const handleCustomerSelect = (customer: any) => {
-    setSelectedCustomer(customer);
-    if (customer) {
-      setCustomerInfo({
-        ...customerInfo,
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone
-      });
-    }
-  };
-
-  const handleCreateNewCustomer = (customerData: any) => {
-    // In a real app, this would create the customer in the database
-    console.log('Creating new customer:', customerData);
-  };
-
   const handlePaymentComplete = () => {
     console.log('Payment completed');
-    // Continue with booking confirmation
     handleSubmit();
   };
 
   const handleSkipPayment = () => {
     console.log('Payment skipped - marked as pending');
-    // Continue with booking confirmation
     handleSubmit();
   };
 
@@ -145,7 +127,7 @@ const BookOnline = () => {
           />
         );
       case 4:
-        if (serviceType === "in-home") {
+        if (!isAdminMode && serviceType === "in-home") {
           return (
             <PhoneVerification
               phone={customerInfo.phone}
@@ -173,7 +155,7 @@ const BookOnline = () => {
           );
         }
       case 5:
-        if (serviceType === "in-home") {
+        if (!isAdminMode && serviceType === "in-home") {
           return (
             <CustomerInformation
               customerInfo={customerInfo}
@@ -199,14 +181,13 @@ const BookOnline = () => {
         }
         break;
       case 6:
-        if (serviceType === "in-home" && isAdminMode) {
+        if (isAdminMode) {
+          // Show confirmation directly for admin mode
           return (
-            <PaymentStep
-              selectedServices={services.filter(s => selectedServices.includes(s.id.toString()))}
-              customerInfo={customerInfo}
-              onPaymentComplete={handlePaymentComplete}
-              onSkipPayment={handleSkipPayment}
-            />
+            <div className="text-center py-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Booking Created Successfully!</h3>
+              <p className="text-gray-500">The appointment has been scheduled for the customer.</p>
+            </div>
           );
         }
         break;
@@ -257,7 +238,7 @@ const BookOnline = () => {
           customerInfo={customerInfo}
           onBack={handleBack}
           onNext={handleNext}
-          onSubmit={isAdminMode && ((step === 5 && serviceType === "in-store") || (step === 6 && serviceType === "in-home")) ? undefined : handleSubmit}
+          onSubmit={isAdminMode && step === maxStep ? handleSubmit : undefined}
         />
 
         <BookingConfirmation
