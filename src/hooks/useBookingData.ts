@@ -101,7 +101,7 @@ export const useBookingData = () => {
     fetchTechnicians();
   }, []);
 
-  // Fixed time slots fetch function with proper parameter types
+  // Fixed time slots fetch function with fallback to basic time generation
   const fetchTimeSlots = useCallback(async (serviceId?: string, technicianId?: string, serviceType?: string, date?: string) => {
     if (!date || !technicianId) return;
     
@@ -109,39 +109,34 @@ export const useBookingData = () => {
       setIsFetchingSlots(true);
       console.log('Fetching available slots for:', { technicianId, date });
       
-      // Fixed RPC call with proper parameter types
-      const { data, error } = await supabase.rpc('get_available_slots', {
-        technician_id_param: technicianId,
-        appointment_date_param: date
-      });
+      // Generate basic time slots as fallback
+      const allTimeSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+      ];
       
-      if (error) {
-        console.error('Error fetching slots:', error);
-        // Fallback to basic time generation
-        const allTimeSlots = [
-          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-          '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-          '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
-        ];
-        
-        const mockSlots: TimeSlot[] = allTimeSlots.map(time => ({
-          time,
-          available: true,
-          booked: false
-        }));
-        
-        setTimeSlots(mockSlots);
-        return;
+      // Check for existing appointments
+      const { data: existingAppointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('appointment_time')
+        .eq('technician_id', technicianId)
+        .eq('appointment_date', date)
+        .not('status', 'in', '(cancelled,completed)');
+      
+      if (appointmentsError) {
+        console.error('Error fetching existing appointments:', appointmentsError);
       }
       
-      // Convert database response to TimeSlot format with proper null checks
-      const availableSlots: TimeSlot[] = (data || []).map((slot: AvailableSlot) => ({
-        time: slot.time_slot,
-        available: true,
-        booked: false
+      const bookedTimes = existingAppointments?.map(apt => apt.appointment_time) || [];
+      
+      const availableSlots: TimeSlot[] = allTimeSlots.map(time => ({
+        time,
+        available: !bookedTimes.includes(time),
+        booked: bookedTimes.includes(time)
       }));
       
-      console.log('Available slots from database:', availableSlots);
+      console.log('Available slots:', availableSlots);
       setTimeSlots(availableSlots);
       
     } catch (error: any) {
@@ -177,13 +172,15 @@ export const useBookingData = () => {
       
       // Group bookings by date with proper null checks
       const monthlyData: {[key: string]: string[]} = {};
-      (data || []).forEach(appointment => {
-        const dateKey = appointment.appointment_date;
-        if (!monthlyData[dateKey]) {
-          monthlyData[dateKey] = [];
-        }
-        monthlyData[dateKey].push(appointment.appointment_time);
-      });
+      if (data && Array.isArray(data)) {
+        data.forEach(appointment => {
+          const dateKey = appointment.appointment_date;
+          if (!monthlyData[dateKey]) {
+            monthlyData[dateKey] = [];
+          }
+          monthlyData[dateKey].push(appointment.appointment_time);
+        });
+      }
       
       console.log('Monthly booked data loaded:', monthlyData);
       setMonthlyBookedData(monthlyData);

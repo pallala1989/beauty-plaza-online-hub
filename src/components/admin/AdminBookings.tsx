@@ -93,7 +93,7 @@ const AdminBookings = () => {
         apt.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.customer_phone?.includes(searchTerm) ||
         apt.services?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.technicians?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        apt.technicians?.name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
