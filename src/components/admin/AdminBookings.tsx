@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,11 +53,11 @@ const AdminBookings = () => {
         .from('appointments')
         .select(`
           *,
-          services (
+          services!service_id (
             name,
             price
           ),
-          technicians (
+          technicians!technician_id (
             name
           )
         `)
