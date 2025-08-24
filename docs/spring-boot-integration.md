@@ -4,6 +4,13 @@
 
 This document outlines the integration between the Beauty Plaza frontend (React/TypeScript) and the Spring Boot backend. The system uses a fallback approach where it first tries to connect to the Spring Boot backend, then falls back to Supabase, and finally to local data.
 
+## Supabase Configuration
+
+### Project Details
+- **Project ID**: rmngcnmwifrcuztflrhp
+- **Project URL**: https://rmngcnmwifrcuztflrhp.supabase.co
+- **Anon Key**: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtbmdjbm13aWZyY3V6dGZscmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNDA4ODUsImV4cCI6MjA3MTYxNjg4NX0.U7ToGuLaNfRtuPzALE5-xMYk3Z2cocYL8ph0Uh5PRO0
+
 ## Backend Configuration
 
 ### Environment Setup
@@ -27,6 +34,8 @@ Create a `.env.local` file in your project root:
 
 ```env
 VITE_SPRING_BOOT_URL=http://localhost:8080
+VITE_SUPABASE_URL=https://rmngcnmwifrcuztflrhp.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtbmdjbm13aWZyY3V6dGZscmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNDA4ODUsImV4cCI6MjA3MTYxNjg4NX0.U7ToGuLaNfRtuPzALE5-xMYk3Z2cocYL8ph0Uh5PRO0
 ```
 
 ## API Endpoints
